@@ -7,7 +7,6 @@
 #include <fs/file.h>
 #include <lib/libc.h>
 #include <lib/misc.h>
-#include <lib/real.h>
 #include <lib/term.h>
 #include <lib/config.h>
 #include <lib/print.h>
@@ -16,9 +15,8 @@
 #include <sys/idt.h>
 #include <lib/fb.h>
 #include <lib/acpi.h>
-#include <drivers/edid.h>
-#include <drivers/vga_textmode.h>
-#include <drivers/gop.h>
+#include <lib/fdt.h>
+#include <libfdt/libfdt.h>
 
 // The following definitions and struct were copied and adapted from Linux
 // kernel headers released under GPL-2.0 WITH Linux-syscall-note
@@ -78,15 +76,19 @@ noreturn void linux_load(char *config, char *cmdline) {
 		MEMMAP_USABLE, 2 * 1024 * 1024);
     fread(kernel_file, base, 0, kernel_file->size);
     fclose(kernel_file);
+    printv("kernel load address: %x\n", base);
 
     void *dtb = get_device_tree_blob();
     if (!dtb)
         panic(true, "no device tree blob found");
 
-    printv("kernel load address: %x\n", base);
     printv("bps hart = %d, device tree blob at %x\n", bsp_hartid, dtb);
 
-    linux_spinup(bsp_hartid, get_device_tr, base);
+    int ret = fdt_set_chosen_string(dtb, "bootargs", cmdline);
+    if (ret < 0)
+       printv("cannot set bootargs: %s", fdt_strerror(ret));
+
+    linux_spinup(bsp_hartid, dtb, base);
 }
 
 #endif	// __riscv64
