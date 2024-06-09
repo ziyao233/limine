@@ -36,13 +36,11 @@ struct linux_header {
 	uint32_t res4;
 } __attribute__((packed));
 
+// End of Linux code
+
 #define LINUX_HEADER_MAGIC2		0x05435352
 #define LINUX_HEADER_MAJOR_VER(ver)	(((ver) >> 16)  & 0xffff)
 #define LINUX_HEADER_MINOR_VER(ver)	(((ver) >> 0) & 0xffff)
-
-// End of Linux code
-
-noreturn void linux_spinup(uint64_t hartid, void *dtb, void *entry);
 
 noreturn void linux_load(char *config, char *cmdline) {
     struct file_handle *kernel_file;
@@ -52,7 +50,7 @@ noreturn void linux_load(char *config, char *cmdline) {
         panic(true, "linux: KERNEL_PATH not specified");
 
     if ((kernel_file = uri_open(kernel_path)) == NULL)
-        panic(true, "linux: Failed to open kernel with path `%#`. Is the path correct?", kernel_path);
+        panic(true, "linux: failed to open kernel `%s`. Is the path correct?", kernel_path);
 
     struct linux_header header;
     fread(kernel_file, &header, 0, sizeof(header));
@@ -74,7 +72,7 @@ noreturn void linux_load(char *config, char *cmdline) {
 		MEMMAP_KERNEL_AND_MODULES, 2 * 1024 * 1024);
     fread(kernel_file, kernel_base, 0, kernel_size);
     fclose(kernel_file);
-    printv("linux: loaded kernel %s at %x, size %u\n", kernel_path, kernel_base, kernel_size);
+    printv("linux: loaded kernel `%s` at %x, size %u\n", kernel_path, kernel_base, kernel_size);
 
     void *dtb = get_device_tree_blob();
     if (!dtb)
@@ -82,13 +80,13 @@ noreturn void linux_load(char *config, char *cmdline) {
 
     int ret = fdt_set_chosen_string(dtb, "bootargs", cmdline);
     if (ret < 0)
-       printv("linux: cannot set bootargs: %s\n", fdt_strerror(ret));
+       printv("linux: cannot set bootargs: `%s`\n", fdt_strerror(ret));
 
     char *module_path = config_get_value(config, 0, "MODULE_PATH");
     if (module_path) {
         struct file_handle *module_file = uri_open(module_path);
         if (!module_file)
-            panic(true, "linux: Failed to open module with path `%s`. Is the path correct?", module_path);
+            panic(true, "linux: failed to open module `%s`. Is the path correct?", module_path);
 
         size_t module_size = module_file->size;
         void *module_base = ext_mem_alloc_type_aligned(
@@ -97,7 +95,7 @@ noreturn void linux_load(char *config, char *cmdline) {
 
         fread(module_file, module_base, 0, module_size);
 	fclose(module_file);
-        printv("linux: loaded module %s at %x, size %u\n", module_path, module_base, module_size);
+        printv("linux: loaded module `%s` at %x, size %u\n", module_path, module_base, module_size);
 
         ret = fdt_set_chosen_uint64(dtb, "linux,initrd-start", (uint64_t)module_base);
         if (ret < 0)
@@ -109,7 +107,7 @@ noreturn void linux_load(char *config, char *cmdline) {
 
     }
 
-    printv("linux: bsp hart = %d, device tree blob at %x\n", bsp_hartid, dtb);
+    printv("linux: bsp hart %d, device tree blob at %x\n", bsp_hartid, dtb);
 
     void (*kernel_entry)(uint64_t hartid, uint64_t dtb) = kernel_base;
     asm volatile ("csrci   sstatus, 0x2\n\t"
@@ -118,4 +116,4 @@ noreturn void linux_load(char *config, char *cmdline) {
     __builtin_unreachable();
 }
 
-#endif	// __riscv64
+#endif
