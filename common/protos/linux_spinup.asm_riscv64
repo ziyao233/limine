@@ -1,9 +1,0 @@
-.section .text
-
-.global linux_spinup
-// noreturn void linux_spinup(uint64_t hartid, void *dtb, void *entry)
-linux_spinup:
-.option norelax
-	csrci	sstatus, 0x2
-	csrw	sie, zero
-	jr	a2

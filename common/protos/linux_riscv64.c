@@ -74,7 +74,7 @@ noreturn void linux_load(char *config, char *cmdline) {
 		MEMMAP_KERNEL_AND_MODULES, 2 * 1024 * 1024);
     fread(kernel_file, kernel_base, 0, kernel_size);
     fclose(kernel_file);
-    printv("linux: loaded kernel %s at %x, size = %u\n", kernel_path, kernel_base, kernel_size);
+    printv("linux: loaded kernel %s at %x, size %u\n", kernel_path, kernel_base, kernel_size);
 
     void *dtb = get_device_tree_blob();
     if (!dtb)
@@ -111,7 +111,11 @@ noreturn void linux_load(char *config, char *cmdline) {
 
     printv("linux: bsp hart = %d, device tree blob at %x\n", bsp_hartid, dtb);
 
-    linux_spinup(bsp_hartid, dtb, kernel_base);
+    void (*kernel_entry)(uint64_t hartid, uint64_t dtb) = kernel_base;
+    asm volatile ("csrci   sstatus, 0x2\n\t"
+		  "csrw    sie, zero\n\t");
+    kernel_entry(bsp_hartid, (uint64_t)dtb);
+    __builtin_unreachable();
 }
 
 #endif	// __riscv64
