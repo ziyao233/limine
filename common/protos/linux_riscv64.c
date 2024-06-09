@@ -51,8 +51,6 @@ noreturn void linux_load(char *config, char *cmdline) {
     if (kernel_path == NULL)
         panic(true, "linux: KERNEL_PATH not specified");
 
-    print("linux: Loading kernel `%#`...\n", kernel_path);
-
     if ((kernel_file = uri_open(kernel_path)) == NULL)
         panic(true, "linux: Failed to open kernel with path `%#`. Is the path correct?", kernel_path);
 
@@ -60,35 +58,60 @@ noreturn void linux_load(char *config, char *cmdline) {
     fread(kernel_file, &header, 0, sizeof(header));
 
     if (header.magic2 != LINUX_HEADER_MAGIC2) {
-        panic(true, "kernel header magic not match");
+        panic(true, "linux: kernel header magic does not match");
     }
 
-    printv("kernel version %d.%d\n", LINUX_HEADER_MAJOR_VER(header.version),
-    				     LINUX_HEADER_MINOR_VER(header.version));
+    printv("linux: boot protocol version %d.%d\n",
+           LINUX_HEADER_MAJOR_VER(header.version),
+	   LINUX_HEADER_MINOR_VER(header.version));
     if (LINUX_HEADER_MINOR_VER(header.version) < 2) {
-        panic(true, "protocols < 0.2 are not supported");
+        panic(true, "linux: protocols < 0.2 are not supported");
     }
 
-    printv("image size: %d %x\n", header.image_size, header.image_size);
-
-    void *base = ext_mem_alloc_type_aligned(
-    		ALIGN_UP(kernel_file->size, 4096),
-		MEMMAP_USABLE, 2 * 1024 * 1024);
-    fread(kernel_file, base, 0, kernel_file->size);
+    size_t kernel_size = kernel_file->size;
+    void *kernel_base = ext_mem_alloc_type_aligned(
+    		ALIGN_UP(kernel_size, 4096),
+		MEMMAP_KERNEL_AND_MODULES, 2 * 1024 * 1024);
+    fread(kernel_file, kernel_base, 0, kernel_size);
     fclose(kernel_file);
-    printv("kernel load address: %x\n", base);
+    printv("linux: loaded kernel %s at %x, size = %u\n", kernel_path, kernel_base, kernel_size);
 
     void *dtb = get_device_tree_blob();
     if (!dtb)
-        panic(true, "no device tree blob found");
-
-    printv("bps hart = %d, device tree blob at %x\n", bsp_hartid, dtb);
+        panic(true, "linux: no device tree blob found");
 
     int ret = fdt_set_chosen_string(dtb, "bootargs", cmdline);
     if (ret < 0)
-       printv("cannot set bootargs: %s", fdt_strerror(ret));
+       printv("linux: cannot set bootargs: %s\n", fdt_strerror(ret));
 
-    linux_spinup(bsp_hartid, dtb, base);
+    char *module_path = config_get_value(config, 0, "MODULE_PATH");
+    if (module_path) {
+        struct file_handle *module_file = uri_open(module_path);
+        if (!module_file)
+            panic(true, "linux: Failed to open module with path `%s`. Is the path correct?", module_path);
+
+        size_t module_size = module_file->size;
+        void *module_base = ext_mem_alloc_type_aligned(
+       			ALIGN_UP(module_size, 4096),
+			MEMMAP_KERNEL_AND_MODULES, 4096);
+
+        fread(module_file, module_base, 0, module_size);
+	fclose(module_file);
+        printv("linux: loaded module %s at %x, size %u\n", module_path, module_base, module_size);
+
+        ret = fdt_set_chosen_uint64(dtb, "linux,initrd-start", (uint64_t)module_base);
+        if (ret < 0)
+	    printv("cannot set initrd: %s\n", fdt_strerror(ret));
+
+	ret = fdt_set_chosen_uint64(dtb, "linux,initrd-end", (uint64_t)(module_base + module_size));
+	if (ret < 0)
+	    printv("linux: cannot set initrd parameter: %s\n", fdt_strerror(ret));
+
+    }
+
+    printv("linux: bsp hart = %d, device tree blob at %x\n", bsp_hartid, dtb);
+
+    linux_spinup(bsp_hartid, dtb, kernel_base);
 }
 
 #endif	// __riscv64
