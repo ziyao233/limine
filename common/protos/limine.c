@@ -41,7 +41,7 @@
 static int paging_mode;
 
 static uint64_t get_hhdm_span_top(int base_revision) {
-    uint64_t ret = 0x100000000;
+    uint64_t ret = base_revision >= 3 ? 0 : 0x100000000;
     for (size_t i = 0; i < memmap_entries; i++) {
         if (base_revision >= 1 && (
             memmap[i].type == MEMMAP_RESERVED
@@ -53,7 +53,7 @@ static uint64_t get_hhdm_span_top(int base_revision) {
         uint64_t length = memmap[i].length;
         uint64_t top = base + length;
 
-        if (base < 0x100000000) {
+        if (base_revision < 3 && base < 0x100000000) {
             base = 0x100000000;
         }
 
@@ -159,8 +159,10 @@ static pagemap_t build_pagemap(int base_revision,
         map_pages(pagemap, 0x1000, 0x1000, VMM_FLAG_WRITE, 0x100000000 - 0x1000);
     }
 
-    // Map 0->4GiB range to HHDM
-    map_pages(pagemap, direct_map_offset, 0, VMM_FLAG_WRITE, 0x100000000);
+    // Map 0->4GiB range to HHDM if base revision < 3
+    if (base_revision < 3) {
+        map_pages(pagemap, direct_map_offset, 0, VMM_FLAG_WRITE, 0x100000000);
+    }
 
     size_t _memmap_entries = memmap_entries;
     struct memmap_entry *_memmap =
@@ -180,7 +182,7 @@ static pagemap_t build_pagemap(int base_revision,
         uint64_t length = _memmap[i].length;
         uint64_t top    = base + length;
 
-        if (base < 0x100000000) {
+        if (base_revision < 3 && base < 0x100000000) {
             base = 0x100000000;
         }
 
@@ -464,8 +466,8 @@ noreturn void limine_load(char *config, char *cmdline) {
                 panic(true, "limine: Duplicated base revision tag");
             }
             base_revision = p[2];
-            // We only support up to revision 2
-            if (p[2] <= 2) {
+            // We only support up to revision 3
+            if (p[2] <= 3) {
                 // Set to 0 to mean "supported"
                 base_rev_p2_ptr = &p[2];
             } else {
