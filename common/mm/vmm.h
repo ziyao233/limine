@@ -161,5 +161,6 @@ void map_page(pagemap_t pagemap, uint64_t virt_addr, uint64_t phys_addr, uint64_
 #endif
 
 int vmm_max_paging_mode(void);
+void map_pages(pagemap_t pagemap, uint64_t virt, uint64_t phys, uint64_t flags, uint64_t count);
 
 #endif

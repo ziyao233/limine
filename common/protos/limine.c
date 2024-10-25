@@ -75,10 +75,7 @@ static uint64_t get_hhdm_span_top(int base_revision) {
 static pagemap_t build_identity_map(void) {
     pagemap_t pagemap = new_pagemap(paging_mode);
 
-    for (uint64_t i = 0; i < 0x100000000; i += 0x40000000) {
-        map_page(pagemap, i, i, VMM_FLAG_WRITE, Size1GiB);
-    }
-
+    map_pages(pagemap, 0, 0, VMM_FLAG_WRITE, 0x100000000);
 
     size_t _memmap_entries = memmap_entries;
     struct memmap_entry *_memmap =
@@ -105,14 +102,11 @@ static pagemap_t build_identity_map(void) {
             continue;
         }
 
-        uint64_t aligned_base   = ALIGN_DOWN(base, 0x40000000);
-        uint64_t aligned_top    = ALIGN_UP(top, 0x40000000);
+        uint64_t aligned_base   = ALIGN_DOWN(base, 0x1000);
+        uint64_t aligned_top    = ALIGN_UP(top, 0x1000);
         uint64_t aligned_length = aligned_top - aligned_base;
 
-        for (uint64_t j = 0; j < aligned_length; j += 0x40000000) {
-            uint64_t page = aligned_base + j;
-            map_page(pagemap, page, page, VMM_FLAG_WRITE, Size1GiB);
-        }
+        map_pages(pagemap, aligned_base, aligned_base, VMM_FLAG_WRITE, aligned_length);
     }
 
     return pagemap;
@@ -157,33 +151,16 @@ static pagemap_t build_pagemap(int base_revision,
             (ranges[i].permissions & ELF_PF_X ? 0 : (nx ? VMM_FLAG_NOEXEC : 0)) |
             (ranges[i].permissions & ELF_PF_W ? VMM_FLAG_WRITE : 0);
 
-        for (uint64_t j = 0; j < ranges[i].length; j += 0x1000) {
-            map_page(pagemap, virt + j, phys + j, pf, Size4KiB);
-        }
+        map_pages(pagemap, virt, phys, pf, ranges[i].length);
     }
 
     // Map 0x1000->4GiB range to identity if base revision == 0
     if (base_revision == 0) {
-        // Sub 2MiB mappings
-        for (uint64_t i = 0x1000; i < 0x200000; i += 0x1000) {
-            map_page(pagemap, i, i, VMM_FLAG_WRITE, Size4KiB);
-        }
-
-        // Map 2MiB to 4GiB
-        for (uint64_t i = 0x200000; i < 0x40000000; i += 0x200000) {
-            map_page(pagemap, i, i, VMM_FLAG_WRITE, Size2MiB);
-        }
-
-        // Map the rest
-        for (uint64_t i = 0x40000000; i < 0x100000000; i += 0x40000000) {
-            map_page(pagemap, i, i, VMM_FLAG_WRITE, Size1GiB);
-        }
+        map_pages(pagemap, 0x1000, 0x1000, VMM_FLAG_WRITE, 0x100000000 - 0x1000);
     }
 
     // Map 0->4GiB range to HHDM
-    for (uint64_t i = 0; i < 0x100000000; i += 0x40000000) {
-        map_page(pagemap, direct_map_offset + i, i, VMM_FLAG_WRITE, Size1GiB);
-    }
+    map_pages(pagemap, direct_map_offset, 0, VMM_FLAG_WRITE, 0x100000000);
 
     size_t _memmap_entries = memmap_entries;
     struct memmap_entry *_memmap =
@@ -211,17 +188,14 @@ static pagemap_t build_pagemap(int base_revision,
             continue;
         }
 
-        uint64_t aligned_base   = ALIGN_DOWN(base, 0x40000000);
-        uint64_t aligned_top    = ALIGN_UP(top, 0x40000000);
+        uint64_t aligned_base   = ALIGN_DOWN(base, 0x1000);
+        uint64_t aligned_top    = ALIGN_UP(top, 0x1000);
         uint64_t aligned_length = aligned_top - aligned_base;
 
-        for (uint64_t j = 0; j < aligned_length; j += 0x40000000) {
-            uint64_t page = aligned_base + j;
-            if (base_revision == 0) {
-                map_page(pagemap, page, page, VMM_FLAG_WRITE, Size1GiB);
-            }
-            map_page(pagemap, direct_map_offset + page, page, VMM_FLAG_WRITE, Size1GiB);
+        if (base_revision == 0) {
+            map_pages(pagemap, aligned_base, aligned_base, VMM_FLAG_WRITE, aligned_length);
         }
+        map_pages(pagemap, direct_map_offset + aligned_base, aligned_base, VMM_FLAG_WRITE, aligned_length);
     }
 
     // Map the framebuffer with appropriate permissions
@@ -238,21 +212,16 @@ static pagemap_t build_pagemap(int base_revision,
         uint64_t aligned_top    = ALIGN_UP(top, 0x1000);
         uint64_t aligned_length = aligned_top - aligned_base;
 
-        for (uint64_t j = 0; j < aligned_length; j += 0x1000) {
-            uint64_t page = aligned_base + j;
-            if (base_revision == 0) {
-                map_page(pagemap, page, page, VMM_FLAG_WRITE | VMM_FLAG_FB, Size4KiB);
-            }
-            map_page(pagemap, direct_map_offset + page, page, VMM_FLAG_WRITE | VMM_FLAG_FB, Size4KiB);
+        if (base_revision == 0) {
+            map_pages(pagemap, aligned_base, aligned_base, VMM_FLAG_WRITE | VMM_FLAG_FB, aligned_length);
         }
+        map_pages(pagemap, direct_map_offset + aligned_base, aligned_base, VMM_FLAG_WRITE | VMM_FLAG_FB, aligned_length);
     }
 
     // XXX we do this as a quick and dirty way to switch to the higher half
 #if defined (__x86_64__) || defined (__i386__)
     if (base_revision >= 1) {
-        for (uint64_t i = 0; i < 0x100000000; i += 0x40000000) {
-            map_page(pagemap, i, i, VMM_FLAG_WRITE, Size1GiB);
-        }
+        map_pages(pagemap, 0, 0, VMM_FLAG_WRITE, 0x100000000);
     }
 #endif
 
