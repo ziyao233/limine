@@ -30,12 +30,12 @@ void map_pages(pagemap_t pagemap, uint64_t virt, uint64_t phys, uint64_t flags, 
     }
 
     for (uint64_t i = 0; i < count; ) {
-        if ((i & (0x40000000 - 1)) == 0 && count - i >= 0x40000000) {
+        if (((phys + i) & (0x40000000 - 1)) == 0 && ((virt + i) & (0x40000000 - 1)) == 0 && count - i >= 0x40000000) {
             map_page(pagemap, virt + i, phys + i, flags, Size1GiB);
             i += 0x40000000;
             continue;
         }
-        if ((i & (0x200000 - 1)) == 0 && count - i >= 0x200000) {
+        if (((phys + i) & (0x200000 - 1)) == 0 && ((virt + i) & (0x200000 - 1)) == 0 && count - i >= 0x200000) {
             map_page(pagemap, virt + i, phys + i, flags, Size2MiB);
             i += 0x200000;
             continue;
