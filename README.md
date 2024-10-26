@@ -21,7 +21,7 @@ Donations welcome, but absolutely not mandatory!
 
 ![Reference screenshot](screenshot.png?raw=true "Reference screenshot")
 
-Wallpaper by neotera (@ocso639)
+[Photo by Gundula Vogel](https://www.pexels.com/photo/ginger-cat-sitting-on-grass-25189639/)
 
 ### Supported architectures
 * IA-32 (32-bit x86)
