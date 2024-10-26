@@ -142,7 +142,7 @@ Limine uses a stripped-down version of [tinf](https://github.com/jibsen/tinf) fo
 
 Limine uses [stb_image](https://github.com/nothings/stb/blob/master/stb_image.h) for wallpaper image loading.
 
-Limine uses a patched version of libfdt (can be found in Linux's source tree) for manipulating FDTs.
+Limine uses [libfdt](https://git.kernel.org/pub/scm/utils/dtc/dtc.git) for manipulating FDTs.
 
 ## Discord server
 We have a [Discord server](https://discord.gg/QEeZMz4) if you need support,
