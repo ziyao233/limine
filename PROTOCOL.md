@@ -912,6 +912,11 @@ struct limine_memmap_entry {
 };
 ```
 
+Note: All these memory entry types, besides usable, are meant to have an illustrative
+purpose only, and are not authoritative sources to be used as a means to find the
+addresses of kernel, modules, framebuffer, ACPI, or otherwise. Use the specific Limine
+features to do that, if available, or other discovery means.
+
 Note: Memory between 0 and 0x1000 is never marked as usable memory.
 The kernel and modules loaded are not marked as usable memory.
 They are marked as Kernel/Modules. The entries are guaranteed to be sorted by
