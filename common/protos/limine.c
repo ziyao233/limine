@@ -43,9 +43,17 @@ static int paging_mode;
 static uint64_t get_hhdm_span_top(int base_revision) {
     uint64_t ret = base_revision >= 3 ? 0 : 0x100000000;
     for (size_t i = 0; i < memmap_entries; i++) {
-        if (base_revision >= 1 && (
+        if (base_revision >= 1 && base_revision < 3 && (
             memmap[i].type == MEMMAP_RESERVED
          || memmap[i].type == MEMMAP_BAD_MEMORY)) {
+            continue;
+        }
+
+        if (base_revision >= 3 && (
+            memmap[i].type != MEMMAP_USABLE
+         && memmap[i].type != MEMMAP_BOOTLOADER_RECLAIMABLE
+         && memmap[i].type != MEMMAP_KERNEL_AND_MODULES
+         && memmap[i].type != MEMMAP_FRAMEBUFFER)) {
             continue;
         }
 
@@ -85,8 +93,10 @@ static pagemap_t build_identity_map(void) {
     }
 
     for (size_t i = 0; i < _memmap_entries; i++) {
-        if (_memmap[i].type == MEMMAP_RESERVED
-         || _memmap[i].type == MEMMAP_BAD_MEMORY) {
+        if (_memmap[i].type != MEMMAP_USABLE
+         && _memmap[i].type != MEMMAP_BOOTLOADER_RECLAIMABLE
+         && _memmap[i].type != MEMMAP_KERNEL_AND_MODULES
+         && _memmap[i].type != MEMMAP_FRAMEBUFFER) {
             continue;
         }
 
@@ -172,9 +182,17 @@ static pagemap_t build_pagemap(int base_revision,
 
     // Map all free memory regions to the higher half direct map offset
     for (size_t i = 0; i < _memmap_entries; i++) {
-        if (base_revision >= 1 && (
+        if (base_revision >= 1 && base_revision < 3 && (
             _memmap[i].type == MEMMAP_RESERVED
          || _memmap[i].type == MEMMAP_BAD_MEMORY)) {
+            continue;
+        }
+
+        if (base_revision >= 3 && (
+            _memmap[i].type != MEMMAP_USABLE
+         && _memmap[i].type != MEMMAP_BOOTLOADER_RECLAIMABLE
+         && _memmap[i].type != MEMMAP_KERNEL_AND_MODULES
+         && _memmap[i].type != MEMMAP_FRAMEBUFFER)) {
             continue;
         }
 
