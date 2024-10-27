@@ -235,6 +235,16 @@ skip_loop:
     arch_macro->next = macros;
     macros = arch_macro;
 
+    struct macro *fw_type_macro = ext_mem_alloc(sizeof(struct macro));
+    strcpy(fw_type_macro->name, "FW_TYPE");
+#if defined (UEFI)
+    strcpy(fw_type_macro->value, "UEFI");
+#else
+    strcpy(fw_type_macro->value, "BIOS");
+#endif
+    fw_type_macro->next = macros;
+    macros = fw_type_macro;
+
     for (size_t i = 0; i < config_size;) {
         if ((config_size - i >= 3 && memcmp(config_addr + i, "\n${", 3) == 0)
          || (config_size - i >= 2 && i == 0 && memcmp(config_addr, "${", 2) == 0)) {

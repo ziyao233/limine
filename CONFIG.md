@@ -198,3 +198,4 @@ Macros must always be placed inside `${...}` where `...` is the arbitrary macro 
 Limine automatically defines these macros:
 
 * `ARCH` - This built-in macro expands to the architecture of the machine. Possible values are: `x86-64`, `ia-32`, `aarch64`, `riscv64`, `loongarch64`. In the case of IA-32, BIOS or UEFI, the macro will always expand to `x86-64` if the 64-bit extensions are available, else `ia-32`.
+* `FW_TYPE` - This built-in macro expands to `UEFI` if booted using UEFI firmware, or `BIOS` if booted using legacy x86 BIOS.
