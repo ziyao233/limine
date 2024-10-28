@@ -25,14 +25,14 @@ The calling convention matches the C ABI for the specific architecture
 
 ## Base protocol revisions
 
-The Limine boot protocol comes in several base revisions; so far, 3
-base revisions are specified: 0, 1, and 2.
+The Limine boot protocol comes in several base revisions; so far, 4
+base revisions are specified: 0 through 3.
 
 Base protocol revisions change certain behaviours of the Limine boot protocol
 outside any specific feature. The specifics are going to be described as
 needed throughout this specification.
 
-Base revision 0 and 1 are considered deprecated. Base revision 0 is the default base revision
+Base revision 0 through 2 are considered deprecated. Base revision 0 is the default base revision
 a kernel is assumed to be requesting and complying to if no base revision tag
 is provided by the kernel, for backwards compatibility.
 
@@ -187,6 +187,15 @@ For base revisions 1 and 2, the above-4GiB HHDM mappings do not comprise memory 
 of types:
  - Reserved
  - Bad memory
+
+For base revision 3, the only memory map regions mapped to the HHDM are:
+ - Usable
+ - Bootloader reclaimable
+ - Kernel and modules
+ - Framebuffer
+
+For base revision 3, the unconditional direct map of the first 4GiB is dropped, and
+only memory map regions of complying types are mapped in.
 
 The bootloader page tables are in bootloader-reclaimable memory (see Memory Map
 feature below), and their specific layout is undefined as long as they provide
