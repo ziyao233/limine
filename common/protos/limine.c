@@ -1382,6 +1382,10 @@ FEAT_END
         pmm_sanitise_entries(memmap, &memmap_entries, true);
     }
 
+#if defined (UEFI)
+    pmm_reclaim_uefi_mem(memmap, &memmap_entries);
+#endif
+
     pagemap_t pagemap = {0};
     pagemap = build_pagemap(base_revision, nx_available, ranges, ranges_count,
                             physical_base, virtual_base, direct_map_offset);
