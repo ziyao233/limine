@@ -1,3 +1,18 @@
+2024-10-28  mintsuki  <mintsuki@protonmail.com>
+
+    *** Release 8.3.0 ***
+
+    Noteworthy changes compared to the previous release, 8.2.0:
+
+    New features:
+        - Limine boot protocol: Specify and implement base revision 3. See the
+          specification for further info.
+        - Add a new `FW_TYPE` built-in config macro.
+
+    Miscellaneous:
+        - Bump Flanterm revision to a6f6edd6631c01caab932a59dce97bbd5f0c72c8.
+        - Limine boot protocol: Misc optimisations to page tables usage.
+
 2024-10-23  mintsuki  <mintsuki@protonmail.com>
 
     *** Release 8.2.0 ***
