@@ -230,6 +230,10 @@ del_mm1:
     *_count = count;
 }
 
+#if defined (UEFI)
+static void pmm_reclaim_uefi_mem(struct memmap_entry *m, size_t *_count);
+#endif
+
 struct memmap_entry *get_memmap(size_t *entries) {
 #if defined (UEFI)
     if (efi_boot_services_exited == false) {
@@ -427,7 +431,7 @@ fail:
     panic(false, "pmm: Failure initialising memory map");
 }
 
-void pmm_reclaim_uefi_mem(struct memmap_entry *m, size_t *_count) {
+static void pmm_reclaim_uefi_mem(struct memmap_entry *m, size_t *_count) {
     size_t count = *_count;
 
     size_t recl_i = 0;
@@ -490,6 +494,8 @@ void pmm_reclaim_uefi_mem(struct memmap_entry *m, size_t *_count) {
             memmap_alloc_range_in(m, &count, efi_base, efi_size, our_type, 0, true, false, false);
         }
     }
+
+    allocations_disallowed = true;
 
     pmm_sanitise_entries(m, &count, false);
 

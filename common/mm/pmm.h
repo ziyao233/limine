@@ -71,6 +71,4 @@ void pmm_sanitise_entries(struct memmap_entry *m, size_t *_count, bool align_ent
 
 extern bool pmm_sanitiser_keep_first_page;
 
-void pmm_reclaim_uefi_mem(struct memmap_entry *m, size_t *_count);
-
 #endif
