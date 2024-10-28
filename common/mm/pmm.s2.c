@@ -18,7 +18,6 @@ extern symbol bss_end;
 #endif
 
 bool allocations_disallowed = true;
-static void sanitise_entries(struct memmap_entry *, size_t *, bool);
 
 void *conv_mem_alloc(size_t count) {
     static uint64_t base = 4096;
@@ -38,7 +37,7 @@ void *conv_mem_alloc(size_t count) {
             memset(ret, 0, count);
             base += count;
 
-            sanitise_entries(memmap, &memmap_entries, false);
+            pmm_sanitise_entries(memmap, &memmap_entries, false);
 
             return ret;
         }
@@ -116,9 +115,13 @@ static bool align_entry(uint64_t *base, uint64_t *length) {
     return true;
 }
 
-static bool sanitiser_keep_first_page = false;
+#if defined (BIOS)
+bool pmm_sanitiser_keep_first_page = false;
+#else
+bool pmm_sanitiser_keep_first_page = true;
+#endif
 
-static void sanitise_entries(struct memmap_entry *m, size_t *_count, bool align_entries) {
+void pmm_sanitise_entries(struct memmap_entry *m, size_t *_count, bool align_entries) {
     size_t count = *_count;
 
     for (size_t i = 0; i < count; i++) {
@@ -171,7 +174,7 @@ static void sanitise_entries(struct memmap_entry *m, size_t *_count, bool align_
         if (m[i].type != MEMMAP_USABLE)
             continue;
 
-        if (!sanitiser_keep_first_page && m[i].base < 0x1000) {
+        if (!pmm_sanitiser_keep_first_page && m[i].base < 0x1000) {
             if (m[i].base + m[i].length <= 0x1000) {
                 goto del_mm1;
             }
@@ -240,7 +243,7 @@ struct memmap_entry *get_memmap(size_t *entries) {
     pmm_reclaim_uefi_mem(memmap, &memmap_entries);
 #endif
 
-    sanitise_entries(memmap, &memmap_entries, true);
+    pmm_sanitise_entries(memmap, &memmap_entries, true);
 
     *entries = memmap_entries;
 
@@ -277,13 +280,13 @@ void init_memmap(void) {
         memmap_entries++;
     }
 
-    sanitise_entries(memmap, &memmap_entries, false);
+    pmm_sanitise_entries(memmap, &memmap_entries, false);
 
     // Allocate bootloader itself
     memmap_alloc_range(4096,
         ALIGN_UP((uintptr_t)bss_end, 4096) - 4096, MEMMAP_BOOTLOADER_RECLAIMABLE, 0, true, false, false);
 
-    sanitise_entries(memmap, &memmap_entries, false);
+    pmm_sanitise_entries(memmap, &memmap_entries, false);
 
     allocations_disallowed = false;
 }
@@ -370,9 +373,7 @@ void init_memmap(void) {
         memmap_entries++;
     }
 
-    bool old_skfp = sanitiser_keep_first_page;
-    sanitiser_keep_first_page = true;
-    sanitise_entries(memmap, &memmap_entries, false);
+    pmm_sanitise_entries(memmap, &memmap_entries, false);
 
     allocations_disallowed = false;
 
@@ -414,15 +415,13 @@ void init_memmap(void) {
     memcpy(untouched_memmap, memmap, memmap_entries * sizeof(struct memmap_entry));
     untouched_memmap_entries = memmap_entries;
 
-    sanitiser_keep_first_page = old_skfp;
-
     // Allocate bootloader itself
     size_t image_size = ALIGN_UP((uintptr_t)__image_end - (uintptr_t)__image_base, 4096);
 
     memmap_alloc_range((uintptr_t)__slide, (uintptr_t)image_size,
                        MEMMAP_BOOTLOADER_RECLAIMABLE, 0, true, false, true);
 
-    sanitise_entries(memmap, &memmap_entries, false);
+    pmm_sanitise_entries(memmap, &memmap_entries, false);
 
     recl = ext_mem_alloc(1024 * sizeof(struct memmap_entry));
 
@@ -498,7 +497,7 @@ static void pmm_reclaim_uefi_mem(struct memmap_entry *m, size_t *_count) {
 
     allocations_disallowed = true;
 
-    sanitise_entries(m, &count, false);
+    pmm_sanitise_entries(m, &count, false);
 
     *_count = count;
 }
@@ -536,10 +535,10 @@ struct memmap_entry *get_raw_memmap(size_t *entry_count) {
         panic(true, "get_raw_memmap called whilst in boot services");
     }
 
-    bool old_skfp = sanitiser_keep_first_page;
-    sanitiser_keep_first_page = true;
+    bool old_skfp = pmm_sanitiser_keep_first_page;
+    pmm_sanitiser_keep_first_page = true;
     pmm_reclaim_uefi_mem(untouched_memmap, &untouched_memmap_entries);
-    sanitiser_keep_first_page = old_skfp;
+    pmm_sanitiser_keep_first_page = old_skfp;
 
     *entry_count = untouched_memmap_entries;
     return untouched_memmap;
@@ -619,7 +618,7 @@ void *ext_mem_alloc_type_aligned_mode(size_t count, uint32_t type, size_t alignm
         }
 #endif
 
-        sanitise_entries(memmap, &memmap_entries, false);
+        pmm_sanitise_entries(memmap, &memmap_entries, false);
 
         return ret;
     }
@@ -766,7 +765,7 @@ bool memmap_alloc_range_in(struct memmap_entry *m, size_t *_count,
     }
 
 success:
-    sanitise_entries(m, &count, false);
+    pmm_sanitise_entries(m, &count, false);
     *_count = count;
     return true;
 }

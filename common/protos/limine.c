@@ -53,7 +53,8 @@ static uint64_t get_hhdm_span_top(int base_revision) {
             memmap[i].type != MEMMAP_USABLE
          && memmap[i].type != MEMMAP_BOOTLOADER_RECLAIMABLE
          && memmap[i].type != MEMMAP_KERNEL_AND_MODULES
-         && memmap[i].type != MEMMAP_FRAMEBUFFER)) {
+         && memmap[i].type != MEMMAP_FRAMEBUFFER
+         && memmap[i].type != MEMMAP_EFI_RECLAIMABLE)) {
             continue;
         }
 
@@ -96,7 +97,8 @@ static pagemap_t build_identity_map(void) {
         if (_memmap[i].type != MEMMAP_USABLE
          && _memmap[i].type != MEMMAP_BOOTLOADER_RECLAIMABLE
          && _memmap[i].type != MEMMAP_KERNEL_AND_MODULES
-         && _memmap[i].type != MEMMAP_FRAMEBUFFER) {
+         && _memmap[i].type != MEMMAP_FRAMEBUFFER
+         && _memmap[i].type != MEMMAP_EFI_RECLAIMABLE)) {
             continue;
         }
 
@@ -192,7 +194,8 @@ static pagemap_t build_pagemap(int base_revision,
             _memmap[i].type != MEMMAP_USABLE
          && _memmap[i].type != MEMMAP_BOOTLOADER_RECLAIMABLE
          && _memmap[i].type != MEMMAP_KERNEL_AND_MODULES
-         && _memmap[i].type != MEMMAP_FRAMEBUFFER)) {
+         && _memmap[i].type != MEMMAP_FRAMEBUFFER
+         && _memmap[i].type != MEMMAP_EFI_RECLAIMABLE)) {
             continue;
         }
 
@@ -1350,10 +1353,6 @@ FEAT_END
     }
 #endif
 
-    pagemap_t pagemap = {0};
-    pagemap = build_pagemap(base_revision, nx_available, ranges, ranges_count,
-                            physical_base, virtual_base, direct_map_offset);
-
 #if defined (UEFI)
     efi_exit_boot_services();
 #endif
@@ -1377,6 +1376,15 @@ FEAT_START
     efi_memmap_request->response = reported_addr(efi_memmap_response);
 FEAT_END
 #endif
+
+    if (base_revision < 3) {
+        pmm_sanitiser_keep_first_page = false;
+        pmm_sanitise_entries(memmap, &memmap_entries, true);
+    }
+
+    pagemap_t pagemap = {0};
+    pagemap = build_pagemap(base_revision, nx_available, ranges, ranges_count,
+                            physical_base, virtual_base, direct_map_offset);
 
     // SMP
 FEAT_START

@@ -67,5 +67,8 @@ void pmm_release_uefi_mem(void);
 #endif
 
 bool check_usable_memory(uint64_t base, uint64_t top);
+void pmm_sanitise_entries(struct memmap_entry *m, size_t *_count, bool align_entries);
+
+extern bool pmm_sanitiser_keep_first_page;
 
 #endif
