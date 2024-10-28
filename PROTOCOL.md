@@ -1129,7 +1129,7 @@ struct limine_rsdp_response {
 };
 ```
 
-* `address` - Address of the RSDP table.
+* `address` - Address of the RSDP table. Physical for base revision >= 3.
 
 ### SMBIOS Feature
 
@@ -1156,8 +1156,8 @@ struct limine_smbios_response {
 };
 ```
 
-* `entry_32` - Address of the 32-bit SMBIOS entry point. NULL if not present.
-* `entry_64` - Address of the 64-bit SMBIOS entry point. NULL if not present.
+* `entry_32` - Address of the 32-bit SMBIOS entry point. NULL if not present. Physical for base revision >= 3.
+* `entry_64` - Address of the 64-bit SMBIOS entry point. NULL if not present. Physical for base revision >= 3.
 
 ### EFI System Table Feature
 
@@ -1183,7 +1183,7 @@ struct limine_efi_system_table_response {
 };
 ```
 
-* `address` - Address of EFI system table.
+* `address` - Address of EFI system table. Physical for base revision >= 3.
 
 ### EFI Memory Map Feature
 
@@ -1212,7 +1212,7 @@ struct limine_efi_memmap_response {
 };
 ```
 
-* `memmap` - Address (HHDM) of the EFI memory map.
+* `memmap` - Address (HHDM for base revision <= 2, else physical) of the EFI memory map.
 * `memmap_size` - Size in bytes of the EFI memory map.
 * `desc_size` - EFI memory map descriptor size in bytes.
 * `desc_version` - Version of EFI memory map descriptors.

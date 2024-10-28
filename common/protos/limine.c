@@ -937,7 +937,7 @@ FEAT_START
     struct limine_rsdp_response *rsdp_response =
         ext_mem_alloc(sizeof(struct limine_rsdp_response));
 
-    rsdp_response->address = reported_addr(rsdp);
+    rsdp_response->address = base_revision <= 2 ? reported_addr(rsdp) : (uintptr_t)rsdp;
 
     rsdp_request->response = reported_addr(rsdp_response);
 FEAT_END
@@ -959,10 +959,10 @@ FEAT_START
         ext_mem_alloc(sizeof(struct limine_smbios_response));
 
     if (smbios_entry_32) {
-        smbios_response->entry_32 = reported_addr(smbios_entry_32);
+        smbios_response->entry_32 = base_revision <= 2 ? reported_addr(smbios_entry_32) : (uintptr_t)smbios_entry_32;
     }
     if (smbios_entry_64) {
-        smbios_response->entry_64 = reported_addr(smbios_entry_64);
+        smbios_response->entry_64 = base_revision <= 2 ? reported_addr(smbios_entry_64) : (uintptr_t)smbios_entry_64;
     }
 
     smbios_request->response = reported_addr(smbios_response);
@@ -979,7 +979,7 @@ FEAT_START
     struct limine_efi_system_table_response *est_response =
         ext_mem_alloc(sizeof(struct limine_efi_system_table_response));
 
-    est_response->address = reported_addr(gST);
+    est_response->address = base_revision <= 2 ? reported_addr(gST) : (uintptr_t)gST;
 
     est_request->response = reported_addr(est_response);
 FEAT_END
@@ -1368,7 +1368,7 @@ FEAT_START
     struct limine_efi_memmap_response *efi_memmap_response =
         ext_mem_alloc(sizeof(struct limine_efi_memmap_response));
 
-    efi_memmap_response->memmap = reported_addr(efi_mmap);
+    efi_memmap_response->memmap = base_revision <= 2 ? reported_addr(efi_mmap) : (uintptr_t)efi_mmap;
     efi_memmap_response->memmap_size = efi_mmap_size;
     efi_memmap_response->desc_size = efi_desc_size;
     efi_memmap_response->desc_version = efi_desc_ver;
