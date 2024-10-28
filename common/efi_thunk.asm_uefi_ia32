@@ -1,33 +1,10 @@
-extern _GLOBAL_OFFSET_TABLE_
-
-section .bss
-
-align 16
-stack:
-    resb 32768
-  .top:
-
 section .text
 
 global efi_main
 extern uefi_entry
 efi_main:
-    pop eax
-    pop ebx
-    pop ecx
-
-    call .get_got
-  .get_got:
-    pop eax
-    add eax, _GLOBAL_OFFSET_TABLE_ + $$ - .get_got wrt ..gotpc
-
-    lea eax, [eax + stack.top wrt ..gotoff]
-    mov esp, eax
-
-    push ecx
-    push ebx
     xor eax, eax
-    push eax
+    mov [esp], eax
     jmp uefi_entry
 
 section .note.GNU-stack noalloc noexec nowrite progbits
