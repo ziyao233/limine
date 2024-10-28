@@ -98,7 +98,7 @@ static pagemap_t build_identity_map(void) {
          && _memmap[i].type != MEMMAP_BOOTLOADER_RECLAIMABLE
          && _memmap[i].type != MEMMAP_KERNEL_AND_MODULES
          && _memmap[i].type != MEMMAP_FRAMEBUFFER
-         && _memmap[i].type != MEMMAP_EFI_RECLAIMABLE)) {
+         && _memmap[i].type != MEMMAP_EFI_RECLAIMABLE) {
             continue;
         }
 
