@@ -927,7 +927,7 @@ to be used as a means to find the addresses of kernel, modules, framebuffer, ACP
 or otherwise. Use the specific Limine features to do that, if available, or other
 discovery means.
 
-Note: Memory between 0 and 0x1000 is never marked as usable memory.
+Note: For base revisions <= 2, memory between 0 and 0x1000 is never marked as usable memory.
 The kernel and modules loaded are not marked as usable memory.
 They are marked as Kernel/Modules. The entries are guaranteed to be sorted by
 base address, lowest to highest. Usable and bootloader reclaimable entries
