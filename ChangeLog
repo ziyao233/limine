@@ -1,5 +1,14 @@
 2024-10-28  mintsuki  <mintsuki@protonmail.com>
 
+    *** Release 8.3.1 ***
+
+    Noteworthy changes compared to the previous release, 8.3.0:
+
+    Bug fixes:
+        - Limine boot protocol: Revert broken optimisation.
+
+2024-10-28  mintsuki  <mintsuki@protonmail.com>
+
     *** Release 8.3.0 ***
 
     Noteworthy changes compared to the previous release, 8.2.0:
