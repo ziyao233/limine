@@ -1,3 +1,13 @@
+2024-10-31  mintsuki  <mintsuki@protonmail.com>
+
+    *** Release 8.3.2 ***
+
+    Noteworthy changes compared to the previous release, 8.3.1:
+
+    Miscellaneous:
+        - Limine boot protocol: Amend base revision 3 to mandate reporting base
+          revision used to kernels.
+
 2024-10-28  mintsuki  <mintsuki@protonmail.com>
 
     *** Release 8.3.1 ***
