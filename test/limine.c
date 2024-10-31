@@ -253,10 +253,16 @@ struct flanterm_context *ft_ctx = NULL;
 static void limine_main(void) {
     e9_printf("\nWe're alive");
 
+    if (LIMINE_LOADED_BASE_REV_VALID == true) {
+        e9_printf("Bootloader has loaded us using base revision %d", LIMINE_LOADED_BASE_REVISION);
+    }
+
     if (LIMINE_BASE_REVISION_SUPPORTED == false) {
         e9_printf("Limine base revision not supported");
         for (;;);
     }
+
+    e9_printf("");
 
     struct limine_framebuffer *fb = framebuffer_request.response->framebuffers[0];
 

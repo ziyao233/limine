@@ -60,6 +60,12 @@ revision and *it* is responsible for failing to boot the kernel, in case the
 bootloader does not yet support the kernel's requested base revision,
 it is up to the kernel itself to fail (or handle the condition otherwise).
 
+For any Limine-compliant bootloader supporting base revision 3, it is *mandatory*
+to load kernels requesting higher unsupported base revisions with at least
+base revision 3, and it is mandatory for it to always set the 2nd component of
+the base revision tag to the base revision actually used to load the kernel,
+regardless of whether it was the requested one or not.
+
 ## Features
 
 The protocol is centered around the concept of request/response - collectively

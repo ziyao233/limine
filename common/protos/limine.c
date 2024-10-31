@@ -34,6 +34,8 @@
 #include <protos/limine.h>
 #include <limine.h>
 
+#define SUPPORTED_BASE_REVISION 3
+
 #define MAX_REQUESTS 128
 
 #define MEMMAP_MAX 1024
@@ -465,6 +467,7 @@ noreturn void limine_load(char *config, char *cmdline) {
     // Determine base revision
     LIMINE_BASE_REVISION(0);
     int base_revision = 0;
+    uint64_t *base_rev_p1_ptr = NULL;
     uint64_t *base_rev_p2_ptr = NULL;
     for (size_t i = 0; i < ALIGN_DOWN(image_size_before_bss, 8); i += 8) {
         uint64_t *p = (void *)(uintptr_t)physical_base + i;
@@ -473,6 +476,7 @@ noreturn void limine_load(char *config, char *cmdline) {
         if (p[0] == limine_requests_start_marker[0] && p[1] == limine_requests_start_marker[1]
          && p[2] == limine_requests_start_marker[2] && p[3] == limine_requests_start_marker[3]) {
             base_revision = 0;
+            base_rev_p1_ptr = NULL;
             base_rev_p2_ptr = NULL;
             continue;
         }
@@ -487,14 +491,17 @@ noreturn void limine_load(char *config, char *cmdline) {
                 panic(true, "limine: Duplicated base revision tag");
             }
             base_revision = p[2];
-            // We only support up to revision 3
-            if (p[2] <= 3) {
+            if (p[2] <= SUPPORTED_BASE_REVISION) {
                 // Set to 0 to mean "supported"
                 base_rev_p2_ptr = &p[2];
             } else {
-                base_revision = 2;
+                base_revision = SUPPORTED_BASE_REVISION;
             }
+            base_rev_p1_ptr = &p[1];
         }
+    }
+    if (base_rev_p1_ptr != NULL) {
+        *base_rev_p1_ptr = base_revision;
     }
     if (base_rev_p2_ptr != NULL) {
         *base_rev_p2_ptr = 0;
