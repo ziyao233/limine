@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdbool.h>
+#include <lib/acpi.h>
 #include <lib/config.h>
 #include <lib/libc.h>
 #include <lib/misc.h>
@@ -63,6 +64,66 @@ opened:
     fclose(f);
 
     return init_config(config_size);
+}
+
+struct smbios_struct_header {
+    uint8_t type;
+    uint8_t length;
+    uint16_t handle;
+} __attribute__((packed));
+
+static size_t smbios_struct_size(struct smbios_struct_header *hdr) {
+    const char *string_data = (void *)((uintptr_t)hdr + hdr->length);
+    size_t i = 1;
+    for (; string_data[i - 1] != '\0' || string_data[i] != '\0'; i++);
+    return hdr->length + i + 1;
+}
+
+bool init_config_smbios(void) {
+    struct smbios_entry_point_32 *smbios_entry_32 = NULL;
+    struct smbios_entry_point_64 *smbios_entry_64 = NULL;
+    acpi_get_smbios((void **)&smbios_entry_32, (void **)&smbios_entry_64);
+    if (smbios_entry_32 == NULL && smbios_entry_64 == NULL) {
+        return false;
+    }
+
+    struct smbios_struct_header *hdr = NULL;
+    size_t struct_count = 0;
+    size_t struct_max_length = 0;
+
+    if (smbios_entry_64) {
+        hdr = (void *)(uintptr_t) smbios_entry_64->table_address;
+        struct_max_length = smbios_entry_64->max_structure_size;
+    } else {
+        hdr = (void *)(uintptr_t) smbios_entry_32->table_address;
+        struct_count = smbios_entry_32->number_of_structures;
+    }
+
+    size_t structure_bytes_processed = 0;
+    for (size_t struct_num = 0; hdr && (!struct_count || struct_num < struct_count); struct_num++) {
+        if (hdr->type == 127)
+            return false;
+
+        if (hdr->type == 11) {
+            const char *string_data = (void *)((uintptr_t) hdr + hdr->length);
+
+            size_t prefix_len = sizeof("limine:config:") - 1;
+            if (!strncmp(string_data, "limine:config:", prefix_len)) {
+                size_t config_size = strlen(string_data) - prefix_len + 1;
+                config_addr = ext_mem_alloc(config_size);
+                memcpy(config_addr, &string_data[prefix_len], config_size);
+                return !init_config(config_size);
+            }
+        }
+
+        if (struct_max_length && structure_bytes_processed + smbios_struct_size(hdr) >= struct_max_length)
+            return false;
+
+        structure_bytes_processed += smbios_struct_size(hdr);
+        hdr = (void *)((uintptr_t) hdr + smbios_struct_size(hdr));
+    }
+
+    return false;
 }
 
 #define NOT_CHILD      (-1)

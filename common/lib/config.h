@@ -27,6 +27,7 @@ extern bool config_format_old;
 extern struct menu_entry *menu_tree;
 
 int init_config_disk(struct volume *part);
+bool init_config_smbios(void);
 int init_config(size_t config_size);
 
 char *config_get_value(const char *config, size_t index, const char *key);
