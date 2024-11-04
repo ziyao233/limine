@@ -2,7 +2,13 @@
 
 ## Location of the config file
 
-Limine scans for a config file on *the boot drive*. Every partition on the boot drive
+First, Limine considers configurations supplied to it as SMBIOS OEM String entries (Type 11). Such
+configurations are accepted if the first string of such an entry starts with the prefix of
+`limine:config:`. The rest of the string is taken as the config file. If such a configuration is
+found, no further scanning for config files is done. As such, the `boot():` drive is undefined
+on BIOS, and set to the boot device of Limine on UEFI.
+
+Next, Limine scans for a config file on *the boot drive*. Every partition on the boot drive
 is scanned sequentially - first partition first (or, on UEFI, the partition containing the
 EFI executable of the booted Limine is scanned first), last partition last - for the presence
 of either a `/limine.conf`, `/limine/limine.conf`, `/boot/limine.conf`, `/boot/limine/limine.conf`,
