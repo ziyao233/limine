@@ -740,18 +740,21 @@ noreturn void _menu(bool first_run) {
     term_fallback();
 
     if (bad_config == false) {
+        if (!init_config_smbios()) {
+
 #if defined (UEFI)
-        if (init_config_disk(boot_volume)) {
+            if (init_config_disk(boot_volume)) {
 #endif
-        volume_iterate_parts(boot_volume,
-            if (!init_config_disk(_PART)) {
-                boot_volume = _PART;
-                break;
+            volume_iterate_parts(boot_volume,
+                if (!init_config_disk(_PART)) {
+                    boot_volume = _PART;
+                    break;
+                }
+            );
+#if defined (UEFI)
             }
-        );
-#if defined (UEFI)
-        }
 #endif
+        }
     }
 
     char *quiet_str = config_get_value(NULL, 0, "QUIET");

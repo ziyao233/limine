@@ -98,6 +98,7 @@ struct smbios_entry_point_64 {
     /// Size of the largest SMBIOS structure, in bytes, and encompasses the
     /// structure’s formatted area and text strings
     uint16_t max_structure_size;
+    uint16_t padding;
     /// 64-bit physical starting address of the read-only SMBIOS Structure
     /// Table.
     uint64_t table_address;
