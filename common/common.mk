@@ -293,7 +293,7 @@ $(call MKESCAPE,$(BUILDDIR))/cc-runtime/cc-runtime.a: ../cc-runtime/*
 		CC="$(CC_FOR_TARGET)" \
 		AR="$(AR_FOR_TARGET)" \
 		CFLAGS="$(CFLAGS_FOR_TARGET)" \
-		CPPFLAGS='-nostdinc -isystem $(call SHESCAPE,$(SRCDIR))/../freestnd-c-hdrs-0bsd -DCC_RUNTIME_NO_FLOAT'
+		CPPFLAGS='-isystem $(call SHESCAPE,$(SRCDIR))/../freestnd-c-hdrs-0bsd -DCC_RUNTIME_NO_FLOAT'
 
 ifeq ($(TARGET),bios)
 
