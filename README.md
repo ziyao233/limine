@@ -10,12 +10,16 @@ Limine (pronounced as demonstrated [here](https://www.merriam-webster.com/dictio
 is a modern, advanced, portable, multiprotocol bootloader and boot manager, also used
 as the reference implementation for the [Limine boot protocol](PROTOCOL.md).
 
-### Donate
+### Community, Support, and Donations
 
+#### Donate
 If you want to support the work I ([@mintsuki](https://github.com/mintsuki)) do on Limine, feel free to donate to me on Liberapay:
-<a href="https://liberapay.com/mintsuki/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
+<p><a href="https://liberapay.com/mintsuki/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></p>
 
 Donations welcome, but absolutely not mandatory!
+
+#### Community
+We have a Matrix room at `#limine:matrix.org` (preferred), and a [Discord server](https://discord.gg/QEeZMz4) if you need support, info, or you just want to hang out with us.
 
 ### Limine's boot menu
 
@@ -143,7 +147,3 @@ Limine uses a stripped-down version of [tinf](https://github.com/jibsen/tinf) fo
 Limine uses [stb_image](https://github.com/nothings/stb/blob/master/stb_image.h) for wallpaper image loading.
 
 Limine uses [libfdt](https://git.kernel.org/pub/scm/utils/dtc/dtc.git) for manipulating FDTs.
-
-## Discord server
-We have a [Discord server](https://discord.gg/QEeZMz4) if you need support,
-info, or you just want to hang out with us.
