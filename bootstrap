@@ -81,9 +81,9 @@ if ! test -f version; then
         9c281448fe40498a6341d74f55c9af4f642c0b1d
 
     download_by_hash \
-        https://github.com/osdev0/freestanding-toolchain/raw/729281786413dc16529d87bd4ea13f03a71e004e/freestanding-toolchain \
+        https://github.com/osdev0/freestanding-toolchain/raw/944d9bed2a4687a7138ab6231312a43c18743a1c/freestanding-toolchain \
         build-aux/freestanding-toolchain \
-        1176b458cac5a7e72b4237fbe22f2245d96f1ac851408f834dc549ebc2d7076b
+        620f782587bef7435db7a95b10104011d2ffb94c313b1c873d9bb0bdcaef5bd8
     chmod +x build-aux/freestanding-toolchain
 
     clone_repo_commit \
