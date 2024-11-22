@@ -9,7 +9,7 @@ export OBJDUMP_FOR_TARGET
 export OBJCOPY_FOR_TARGET
 export READELF_FOR_TARGET
 
-BUILDDIR ?=
+BUILDDIR :=
 
 override SRCDIR := $(shell pwd -P)
 

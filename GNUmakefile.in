@@ -6,20 +6,18 @@ export SOURCE_DATE_EPOCH
 
 override SOURCE_DATE_EPOCH_TOUCH := @SOURCE_DATE_EPOCH_TOUCH@
 
-override prefix := @prefix@
-override exec_prefix := @exec_prefix@
-override PACKAGE_TARNAME := @PACKAGE_TARNAME@
+prefix := @prefix@
+exec_prefix := @exec_prefix@
+PACKAGE_TARNAME := @PACKAGE_TARNAME@
 
-override bindir := @bindir@
-override datarootdir := @datarootdir@
-override includedir := @includedir@
-override datarootdir := @datarootdir@
-override mandir := @mandir@
-override docdir := @docdir@
+bindir := @bindir@
+datarootdir := @datarootdir@
+includedir := @includedir@
+datarootdir := @datarootdir@
+mandir := @mandir@
+docdir := @docdir@
 
-override STRIP := @STRIP@
-
-DESTDIR ?=
+STRIP := @STRIP@
 
 override BUILDDIR := @BUILDDIR@
 override BINDIR := $(BUILDDIR)/bin
@@ -33,8 +31,6 @@ override MKESCAPE = $(subst $(SPACE),\ ,$(1))
 override SHESCAPE = $(subst ','\'',$(1))
 override NASMESCAPE = $(subst ','"'$(COMMA) \"'\"$(COMMA) '"',$(1))
 
-override USER_VARIABLE = $(if $(filter $(origin $(1)),default undefined),$(eval override $(1) := $(2)))
-
 override BUILD_BIOS := @BUILD_BIOS@
 override BUILD_UEFI_X86_64 := @BUILD_UEFI_X86_64@
 override BUILD_UEFI_IA32 := @BUILD_UEFI_IA32@
@@ -45,61 +41,52 @@ override BUILD_UEFI_CD := @BUILD_UEFI_CD@
 override BUILD_BIOS_PXE := @BUILD_BIOS_PXE@
 override BUILD_BIOS_CD := @BUILD_BIOS_CD@
 
-override DEFAULT_CC := @CC@
-$(call USER_VARIABLE,CC,$(DEFAULT_CC))
+CC := @CC@
 export CC
 
-override MKDIR_P := @MKDIR_P@
+MKDIR_P := @MKDIR_P@
 export MKDIR_P
 
-override INSTALL := @INSTALL@
+INSTALL := @INSTALL@
 export INSTALL
 
-override INSTALL_PROGRAM := @INSTALL_PROGRAM@
+INSTALL_PROGRAM := @INSTALL_PROGRAM@
 export INSTALL_PROGRAM
 
-override INSTALL_DATA := @INSTALL_DATA@
+INSTALL_DATA := @INSTALL_DATA@
 export INSTALL_DATA
 
-override GREP := @GREP@
+GREP := @GREP@
 export GREP
 
-override SED := @SED@
+SED := @SED@
 export SED
 
-override AWK := @AWK@
+AWK := @AWK@
 export AWK
 
-override DEFAULT_CPPFLAGS := @CPPFLAGS@
-$(call USER_VARIABLE,CPPFLAGS,$(DEFAULT_CPPFLAGS))
+CPPFLAGS := @CPPFLAGS@
 override CPPFLAGS := @PKGCONF_CPPFLAGS@ $(CPPFLAGS)
 export CPPFLAGS
-override DEFAULT_CFLAGS := @CFLAGS@
-$(call USER_VARIABLE,CFLAGS,$(DEFAULT_CFLAGS))
+CFLAGS := @CFLAGS@
 override CFLAGS += @PKGCONF_CFLAGS@
 export CFLAGS
-override DEFAULT_LDFLAGS := @LDFLAGS@
-$(call USER_VARIABLE,LDFLAGS,$(DEFAULT_LDFLAGS))
+LDFLAGS := @LDFLAGS@
 export LDFLAGS
-override DEFAULT_LIBS := @LIBS@
-$(call USER_VARIABLE,LIBS,$(DEFAULT_LIBS))
+LIBS := @LIBS@
 override LIBS += @PKGCONF_LIBS@
 export LIBS
 
 override WERROR_FLAG := @WERROR_FLAG@
 export WERROR_FLAG
 
-override DEFAULT_CFLAGS_FOR_TARGET := @CFLAGS_FOR_TARGET@
-$(call USER_VARIABLE,CFLAGS_FOR_TARGET,$(DEFAULT_CFLAGS_FOR_TARGET))
+CFLAGS_FOR_TARGET := @CFLAGS_FOR_TARGET@
 export CFLAGS_FOR_TARGET
-override DEFAULT_CPPFLAGS_FOR_TARGET := @CPPFLAGS_FOR_TARGET@
-$(call USER_VARIABLE,CPPFLAGS_FOR_TARGET,$(DEFAULT_CPPFLAGS_FOR_TARGET))
+CPPFLAGS_FOR_TARGET := @CPPFLAGS_FOR_TARGET@
 export CPPFLAGS_FOR_TARGET
-override DEFAULT_LDFLAGS_FOR_TARGET := @LDFLAGS_FOR_TARGET@
-$(call USER_VARIABLE,LDFLAGS_FOR_TARGET,$(DEFAULT_LDFLAGS_FOR_TARGET))
+LDFLAGS_FOR_TARGET := @LDFLAGS_FOR_TARGET@
 export LDFLAGS_FOR_TARGET
-override DEFAULT_NASMFLAGS_FOR_TARGET := @NASMFLAGS_FOR_TARGET@
-$(call USER_VARIABLE,NASMFLAGS_FOR_TARGET,$(DEFAULT_NASMFLAGS_FOR_TARGET))
+NASMFLAGS_FOR_TARGET := @NASMFLAGS_FOR_TARGET@
 export NASMFLAGS_FOR_TARGET
 
 override LIMINE_VERSION := @PACKAGE_VERSION@

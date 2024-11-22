@@ -9,8 +9,8 @@ export OBJDUMP_FOR_TARGET
 export OBJCOPY_FOR_TARGET
 export READELF_FOR_TARGET
 
-TARGET ?=
-BUILDDIR ?=
+TARGET :=
+BUILDDIR :=
 
 override SRCDIR := $(shell pwd -P)
 
@@ -24,8 +24,8 @@ ifeq ($(call MKESCAPE,$(BUILDDIR)),)
     $(error BUILDDIR not specified)
 endif
 
-COM_OUTPUT ?= false
-E9_OUTPUT ?= false
+COM_OUTPUT := false
+E9_OUTPUT := false
 
 override S2CFLAGS := -Os
 
