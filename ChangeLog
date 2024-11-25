@@ -1,3 +1,16 @@
+2024-11-25  mintsuki  <mintsuki@protonmail.com>
+
+    *** Release 8.4.1 ***
+
+    Noteworthy changes compared to the previous release, 8.4.0:
+
+    Miscellaneous:
+        - Limine boot protocol: Ensure machines with pre-enabled x2APIC are
+          properly supported.
+        - Reuse a viable framebuffer for UEFI fallback terminal output (like on
+          panics) if boot services have been exited instead of bailing out.
+        - Miscellaneous build system updates.
+
 2024-11-08  mintsuki  <mintsuki@protonmail.com>
 
     *** Release 8.4.0 ***
