@@ -121,17 +121,27 @@ struct limine_smp_info *init_smp(size_t   *cpu_count,
 
     struct gdtr gdtr = gdt;
 
-    uint8_t bsp_lapic_id = lapic_read(LAPIC_REG_ID) >> 24;
-    *_bsp_lapic_id = bsp_lapic_id;
+    uint8_t bsp_lapic_id;
+    uint32_t bsp_x2apic_id;
+
+    // If x2APIC already enabled by BIOS, then xAPIC is not available
+    if (rdmsr(0x1b) & (1 << 10)) {
+        if (!x2apic) {
+            panic(false, "smp: Kernel does not support x2APIC, but machine requires it");
+        }
+    }
 
     x2apic = x2apic && x2apic_enable();
 
-    uint32_t bsp_x2apic_id = bsp_lapic_id;
-
     if (x2apic) {
         bsp_x2apic_id = x2apic_read(LAPIC_REG_ID);
-        *_bsp_lapic_id = bsp_x2apic_id;
+        bsp_lapic_id = bsp_x2apic_id;
+    } else {
+        bsp_lapic_id = lapic_read(LAPIC_REG_ID) >> 24;
+        bsp_x2apic_id = bsp_lapic_id;
     }
+
+    *_bsp_lapic_id = bsp_x2apic_id;
 
     *cpu_count = 0;
 
