@@ -112,7 +112,10 @@ endif
 
 $(call MKESCAPE,$(BINDIR))/limine: $(call MKESCAPE,$(BINDIR))/Makefile $(call MKESCAPE,$(SRCDIR))/host/limine.c $(if $(filter $(BUILD_BIOS),limine-bios),$(call MKESCAPE,$(BINDIR))/limine-bios-hdd.h)
 	$(SED) 's/%VERSION%/@PACKAGE_VERSION@/g;s/%COPYRIGHT%/@LIMINE_COPYRIGHT@/g' <'$(call SHESCAPE,$(SRCDIR))/host/limine.c' >'$(call SHESCAPE,$(BINDIR))/limine.c'
-	CPPFLAGS='$(CPPFLAGS) $(LIMINE_NO_BIOS) -DLIMINE_DATADIR=\"$(call SHESCAPE,$(datarootdir))/limine\"' $(MAKE) -C '$(call SHESCAPE,$(BINDIR))' limine
+	$(MAKE) -C '$(call SHESCAPE,$(BINDIR))' limine \
+		CC="$(CC)" \
+		CFLAGS="$(CFLAGS)" \
+		CPPFLAGS='$(CPPFLAGS) $(LIMINE_NO_BIOS) -DLIMINE_DATADIR=\"$(call SHESCAPE,$(datarootdir))/limine\"'
 
 $(call MKESCAPE,$(BINDIR))/Makefile: $(call MKESCAPE,$(SRCDIR))/host/host.mk $(call MKESCAPE,$(SRCDIR))/host/.gitignore
 	mkdir -p '$(call SHESCAPE,$(BINDIR))'
