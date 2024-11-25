@@ -4,6 +4,7 @@
 #include <lib/term.h>
 #include <lib/real.h>
 #include <lib/misc.h>
+#include <lib/fb.h>
 #include <mm/pmm.h>
 #include <drivers/vga_textmode.h>
 #include <flanterm/backends/fb.h>
@@ -226,16 +227,16 @@ static bool dummy_handle(void) {
 void term_fallback(void) {
     term_notready();
 
+    terms = ext_mem_alloc(sizeof(void *));
+    terms_i = 1;
+
+    terms[0] = ext_mem_alloc(sizeof(struct flanterm_context));
+
+    struct flanterm_context *term = terms[0];
+
 #if defined (UEFI)
     if (!efi_boot_services_exited) {
 #endif
-
-        terms = ext_mem_alloc(sizeof(void *));
-        terms_i = 1;
-
-        terms[0] = ext_mem_alloc(sizeof(struct flanterm_context));
-
-        struct flanterm_context *term = terms[0];
 
         fallback_clear(NULL, true);
 
@@ -277,6 +278,32 @@ void term_fallback(void) {
 
         term->set_text_fg_default(term);
         term->set_text_bg_default(term);
+    } else {
+        if (fb_fbs_count == 0) {
+            goto fail;
+        }
+
+        terms[0] = flanterm_fb_init(ext_mem_alloc, pmm_free,
+            (void *)(uintptr_t)fb_fbs[0].framebuffer_addr, fb_fbs[0].framebuffer_width,
+            fb_fbs[0].framebuffer_height, fb_fbs[0].framebuffer_pitch,
+            fb_fbs[0].red_mask_size, fb_fbs[0].red_mask_shift,
+            fb_fbs[0].green_mask_size, fb_fbs[0].green_mask_shift,
+            fb_fbs[0].blue_mask_size, fb_fbs[0].blue_mask_shift,
+            NULL,
+            NULL, NULL,
+            NULL, NULL,
+            NULL, NULL,
+            NULL, 0, 0, 1,
+            0, 0,
+            0
+        );
     }
+
+    return;
+
+fail:
+    pmm_free(terms[0], sizeof(struct flanterm_context));
+    pmm_free(terms, sizeof(void *));
+    terms_i = 0;
 #endif
 }

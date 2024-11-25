@@ -6,6 +6,9 @@
 #include <drivers/gop.h>
 #include <mm/pmm.h>
 
+struct fb_info *fb_fbs;
+size_t fb_fbs_count = 0;
+
 void fb_init(struct fb_info **ret, size_t *_fbs_count,
              uint64_t target_width, uint64_t target_height, uint16_t target_bpp) {
 #if defined (BIOS)
@@ -24,6 +27,9 @@ void fb_init(struct fb_info **ret, size_t *_fbs_count,
 #elif defined (UEFI)
     init_gop(ret, _fbs_count, target_width, target_height, target_bpp);
 #endif
+
+    fb_fbs = *ret;
+    fb_fbs_count = *_fbs_count;
 }
 
 void fb_clear(struct fb_info *fb) {

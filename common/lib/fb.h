@@ -32,6 +32,9 @@ struct fb_info {
     struct fb_info *mode_list;
 };
 
+extern struct fb_info *fb_fbs;
+extern size_t fb_fbs_count;
+
 void fb_init(struct fb_info **ret, size_t *_fbs_count,
              uint64_t target_width, uint64_t target_height, uint16_t target_bpp);
 
