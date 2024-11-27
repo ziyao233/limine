@@ -104,6 +104,7 @@ $(call MKESCAPE,$(BINDIR))/limine-bios-hdd.h: $(call MKESCAPE,$(BINDIR))/limine-
 	$(MKDIR_P) '$(call SHESCAPE,$(BINDIR))'
 	cd '$(call SHESCAPE,$(BINDIR))' && '$(call SHESCAPE,$(SRCDIR))/host/hgen.sh' >limine-bios-hdd.h
 
+override LIMINE_NO_BIOS :=
 ifneq ($(BUILD_BIOS),limine-bios)
 override LIMINE_NO_BIOS := -DLIMINE_NO_BIOS
 endif
@@ -113,7 +114,10 @@ $(call MKESCAPE,$(BINDIR))/limine: $(call MKESCAPE,$(BINDIR))/Makefile $(call MK
 	$(MAKE) -C '$(call SHESCAPE,$(BINDIR))' limine \
 		CC="$(CC)" \
 		CFLAGS="$(CFLAGS)" \
-		CPPFLAGS='$(CPPFLAGS) $(LIMINE_NO_BIOS) -DLIMINE_DATADIR=\"$(call SHESCAPE,$(datarootdir))/limine\"'
+		CPPFLAGS='$(CPPFLAGS) $(LIMINE_NO_BIOS) -DLIMINE_DATADIR=\"$(call SHESCAPE,$(datarootdir))/limine\"' \
+		LDFLAGS="$(LDFLAGS)" \
+		LIBS="$(LIBS)" \
+		WERROR_FLAG="$(WERROR_FLAG)"
 
 $(call MKESCAPE,$(BINDIR))/Makefile: $(call MKESCAPE,$(SRCDIR))/host/host.mk $(call MKESCAPE,$(SRCDIR))/host/.gitignore
 	mkdir -p '$(call SHESCAPE,$(BINDIR))'
@@ -336,10 +340,10 @@ maintainer-clean: distclean
 
 .PHONY: common-uefi-x86-64
 common-uefi-x86-64:
-	$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk all \
-		TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/uefi-x86_64-toolchain.mk' \
-		TARGET=uefi-x86-64 \
-		BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-uefi-x86-64'
+	TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/uefi-x86_64-toolchain.mk' \
+	TARGET=uefi-x86-64 \
+	BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-uefi-x86-64' \
+		$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk
 
 .PHONY: common-uefi-x86-64-clean
 common-uefi-x86-64-clean:
@@ -347,10 +351,10 @@ common-uefi-x86-64-clean:
 
 .PHONY: common-uefi-aarch64
 common-uefi-aarch64:
-	$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk all \
-		TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/uefi-aarch64-toolchain.mk' \
-		TARGET=uefi-aarch64 \
-		BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-uefi-aarch64'
+	TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/uefi-aarch64-toolchain.mk' \
+	TARGET=uefi-aarch64 \
+	BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-uefi-aarch64' \
+		$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk
 
 .PHONY: common-uefi-aarch64-clean
 common-uefi-aarch64-clean:
@@ -358,10 +362,10 @@ common-uefi-aarch64-clean:
 
 .PHONY: common-uefi-riscv64
 common-uefi-riscv64:
-	$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk all \
-		TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/uefi-riscv64-toolchain.mk' \
-		TARGET=uefi-riscv64 \
-		BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-uefi-riscv64'
+	TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/uefi-riscv64-toolchain.mk' \
+	TARGET=uefi-riscv64 \
+	BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-uefi-riscv64' \
+		$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk
 
 .PHONY: common-uefi-riscv64-clean
 common-uefi-riscv64-clean:
@@ -369,10 +373,10 @@ common-uefi-riscv64-clean:
 
 .PHONY: common-uefi-loongarch64
 common-uefi-loongarch64:
-	$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk all \
-		TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/uefi-loongarch64-toolchain.mk' \
-		TARGET=uefi-loongarch64 \
-		BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-uefi-loongarch64'
+	TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/uefi-loongarch64-toolchain.mk' \
+	TARGET=uefi-loongarch64 \
+	BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-uefi-loongarch64' \
+		$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk
 
 .PHONY: common-uefi-loongarch64-clean
 common-uefi-loongarch64-clean:
@@ -380,10 +384,10 @@ common-uefi-loongarch64-clean:
 
 .PHONY: common-uefi-ia32
 common-uefi-ia32:
-	$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk all \
-		TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/uefi-i686-toolchain.mk' \
-		TARGET=uefi-ia32 \
-		BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-uefi-ia32'
+	TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/uefi-i686-toolchain.mk' \
+	TARGET=uefi-ia32 \
+	BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-uefi-ia32' \
+		$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk
 
 .PHONY: common-uefi-ia32-clean
 common-uefi-ia32-clean:
@@ -391,10 +395,10 @@ common-uefi-ia32-clean:
 
 .PHONY: common-bios
 common-bios:
-	$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk all \
-		TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/bios-i686-toolchain.mk' \
-		TARGET=bios \
-		BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-bios'
+	TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/bios-i686-toolchain.mk' \
+	TARGET=bios \
+	BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/common-bios' \
+		$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/common' -f common.mk
 
 .PHONY: common-bios-clean
 common-bios-clean:
@@ -402,9 +406,9 @@ common-bios-clean:
 
 .PHONY: decompressor
 decompressor:
-	$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/decompressor' -f decompressor.mk all \
-		TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/bios-i686-toolchain.mk' \
-		BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/decompressor-build'
+	TOOLCHAIN_FILE='$(call SHESCAPE,$(BUILDDIR))/toolchain-files/bios-i686-toolchain.mk' \
+	BUILDDIR='$(call SHESCAPE,$(BUILDDIR))/decompressor-build' \
+		$(MAKE) -C '$(call SHESCAPE,$(SRCDIR))/decompressor' -f decompressor.mk
 
 .PHONY: decompressor-clean
 decompressor-clean:

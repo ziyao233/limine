@@ -1,12 +1,17 @@
 SHELL = /bin/sh
 
 CC = cc
+CFLAGS = -g -O2 -pipe
+CPPFLAGS =
+LDFLAGS =
+LIBS =
+
+WERROR_FLAG =
+
 STRIP = strip
 INSTALL = ./install-sh
 
 PREFIX = /usr/local
-
-CFLAGS = -g -O2 -pipe
 
 .PHONY: all
 all: limine

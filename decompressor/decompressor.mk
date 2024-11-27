@@ -2,14 +2,6 @@ MAKEFLAGS += -rR
 .SUFFIXES:
 
 include $(TOOLCHAIN_FILE)
-export AR_FOR_TARGET
-export CC_FOR_TARGET
-export LD_FOR_TARGET
-export OBJDUMP_FOR_TARGET
-export OBJCOPY_FOR_TARGET
-export READELF_FOR_TARGET
-
-BUILDDIR :=
 
 override SRCDIR := $(shell pwd -P)
 
@@ -18,10 +10,6 @@ override SPACE := $(subst ,, )
 override MKESCAPE = $(subst $(SPACE),\ ,$(1))
 override SHESCAPE = $(subst ','\'',$(1))
 override OBJESCAPE = $(subst .a ,.a' ',$(subst .o ,.o' ',$(call SHESCAPE,$(1))))
-
-ifeq ($(call MKESCAPE,$(BUILDDIR)),)
-    $(error BUILDDIR not specified)
-endif
 
 override CFLAGS_FOR_TARGET += \
     -Os \

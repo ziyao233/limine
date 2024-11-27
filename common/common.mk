@@ -9,9 +9,6 @@ export OBJDUMP_FOR_TARGET
 export OBJCOPY_FOR_TARGET
 export READELF_FOR_TARGET
 
-TARGET :=
-BUILDDIR :=
-
 override SRCDIR := $(shell pwd -P)
 
 override SPACE := $(subst ,, )
@@ -19,10 +16,6 @@ override SPACE := $(subst ,, )
 override MKESCAPE = $(subst $(SPACE),\ ,$(1))
 override SHESCAPE = $(subst ','\'',$(1))
 override OBJESCAPE = $(subst .a ,.a' ',$(subst .o ,.o' ',$(call SHESCAPE,$(1))))
-
-ifeq ($(call MKESCAPE,$(BUILDDIR)),)
-    $(error BUILDDIR not specified)
-endif
 
 COM_OUTPUT := false
 E9_OUTPUT := false
