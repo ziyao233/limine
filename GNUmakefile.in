@@ -67,15 +67,12 @@ AWK := @AWK@
 export AWK
 
 CPPFLAGS := @CPPFLAGS@
-override CPPFLAGS := @PKGCONF_CPPFLAGS@ $(CPPFLAGS)
 export CPPFLAGS
 CFLAGS := @CFLAGS@
-override CFLAGS += @PKGCONF_CFLAGS@
 export CFLAGS
 LDFLAGS := @LDFLAGS@
 export LDFLAGS
 LIBS := @LIBS@
-override LIBS += @PKGCONF_LIBS@
 export LIBS
 
 override WERROR_FLAG := @WERROR_FLAG@
