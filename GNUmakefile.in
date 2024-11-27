@@ -6,9 +6,10 @@ export SOURCE_DATE_EPOCH
 
 override SOURCE_DATE_EPOCH_TOUCH := @SOURCE_DATE_EPOCH_TOUCH@
 
+override PACKAGE_TARNAME := @PACKAGE_TARNAME@
+
 prefix := @prefix@
 exec_prefix := @exec_prefix@
-PACKAGE_TARNAME := @PACKAGE_TARNAME@
 
 bindir := @bindir@
 datarootdir := @datarootdir@
