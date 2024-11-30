@@ -1,3 +1,25 @@
+2024-11-30  mintsuki  <mintsuki@protonmail.com>
+
+    *** Release 8.5.0 ***
+
+    Noteworthy changes compared to the previous release, 8.4.1:
+
+    New features:
+        - Limine boot protocol: Introduce limine.h API revisions to avoid API
+          breaks.
+
+    Bug fixes:
+        - Limine boot protocol: Amend base revision 3 to keep EFI memmap
+          pointer as virtual. Making it physical made no sense and is
+          henceforth considered a bug.
+
+    Miscellaneous:
+        - Limine boot protocol: Rename SMP feature to MP feature for limine.h
+          API revision 1+.
+        - Limine boot protocol: Make some types that were void pointers into
+          uint64_t's to better represent their physical nature; limine.h API
+          revision 1+.
+
 2024-11-25  mintsuki  <mintsuki@protonmail.com>
 
     *** Release 8.4.1 ***
