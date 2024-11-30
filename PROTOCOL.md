@@ -1304,7 +1304,7 @@ struct limine_dtb_response {
 };
 ```
 
-* `dtb_ptr` - Virtual pointer to the device tree blob.
+* `dtb_ptr` - Virtual (HHDM) pointer to the device tree blob, in bootloader reclaimable memory.
 
 Note: If the DTB cannot be found, the response will *not* be generated.
 
