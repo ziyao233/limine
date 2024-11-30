@@ -31,6 +31,14 @@ extern "C" {
 #  define LIMINE_PTR(TYPE) TYPE
 #endif
 
+#ifndef LIMINE_API_REVISION
+#  define LIMINE_API_REVISION 0
+#endif
+
+#if LIMINE_API_REVISION > 1
+#  error "limine.h API revision unsupported"
+#endif
+
 #ifdef __GNUC__
 #  define LIMINE_DEPRECATED __attribute__((__deprecated__))
 #  define LIMINE_DEPRECATED_IGNORE_START \
@@ -330,17 +338,27 @@ LIMINE_DEPRECATED_IGNORE_END
 
 /* MP */
 
-#define LIMINE_MP_REQUEST { LIMINE_COMMON_MAGIC, 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 }
+#if LIMINE_API_REVISION >= 1
+#  define LIMINE_MP_REQUEST { LIMINE_COMMON_MAGIC, 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 }
+#  define LIMINE_MP(TEXT) limine_mp_##TEXT
+#else
+#  define LIMINE_SMP_REQUEST { LIMINE_COMMON_MAGIC, 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 }
+#  define LIMINE_MP(TEXT) limine_smp_##TEXT
+#endif
 
-struct limine_mp_info;
+struct LIMINE_MP(info);
 
-typedef void (*limine_goto_address)(struct limine_mp_info *);
+typedef void (*limine_goto_address)(struct LIMINE_MP(info) *);
 
 #if defined (__x86_64__) || defined (__i386__)
 
-#define LIMINE_MP_X2APIC (1 << 0)
+#if LIMINE_API_REVISION >= 1
+#  define LIMINE_MP_X2APIC (1 << 0)
+#else
+#  define LIMINE_SMP_X2APIC (1 << 0)
+#endif
 
-struct limine_mp_info {
+struct LIMINE_MP(info) {
     uint32_t processor_id;
     uint32_t lapic_id;
     uint64_t reserved;
@@ -348,17 +366,17 @@ struct limine_mp_info {
     uint64_t extra_argument;
 };
 
-struct limine_mp_response {
+struct LIMINE_MP(response) {
     uint64_t revision;
     uint32_t flags;
     uint32_t bsp_lapic_id;
     uint64_t cpu_count;
-    LIMINE_PTR(struct limine_mp_info **) cpus;
+    LIMINE_PTR(struct LIMINE_MP(info) **) cpus;
 };
 
 #elif defined (__aarch64__)
 
-struct limine_mp_info {
+struct LIMINE_MP(info) {
     uint32_t processor_id;
     uint32_t reserved1;
     uint64_t mpidr;
@@ -367,17 +385,17 @@ struct limine_mp_info {
     uint64_t extra_argument;
 };
 
-struct limine_mp_response {
+struct LIMINE_MP(response) {
     uint64_t revision;
     uint64_t flags;
     uint64_t bsp_mpidr;
     uint64_t cpu_count;
-    LIMINE_PTR(struct limine_mp_info **) cpus;
+    LIMINE_PTR(struct LIMINE_MP(info) **) cpus;
 };
 
 #elif defined (__riscv) && (__riscv_xlen == 64)
 
-struct limine_mp_info {
+struct LIMINE_MP(info) {
     uint64_t processor_id;
     uint64_t hartid;
     uint64_t reserved;
@@ -385,33 +403,33 @@ struct limine_mp_info {
     uint64_t extra_argument;
 };
 
-struct limine_mp_response {
+struct LIMINE_MP(response) {
     uint64_t revision;
     uint64_t flags;
     uint64_t bsp_hartid;
     uint64_t cpu_count;
-    LIMINE_PTR(struct limine_mp_info **) cpus;
+    LIMINE_PTR(struct LIMINE_MP(info) **) cpus;
 };
 
 #elif defined (__loongarch__) && (__loongarch_grlen == 64)
 
-struct limine_mp_info {
+struct LIMINE_MP(info) {
     uint64_t reserved;
 };
 
-struct limine_mp_response {
+struct LIMINE_MP(response) {
     uint64_t cpu_count;
-    LIMINE_PTR(struct limine_mp_info **) cpus;
+    LIMINE_PTR(struct LIMINE_MP(info) **) cpus;
 };
 
 #else
 #error Unknown architecture
 #endif
 
-struct limine_mp_request {
+struct LIMINE_MP(request) {
     uint64_t id[4];
     uint64_t revision;
-    LIMINE_PTR(struct limine_mp_response *) response;
+    LIMINE_PTR(struct LIMINE_MP(response) *) response;
     uint64_t flags;
 };
 
@@ -513,7 +531,11 @@ struct limine_module_request {
 
 struct limine_rsdp_response {
     uint64_t revision;
+#if LIMINE_API_REVISION >= 1
     uint64_t address;
+#else
+    LIMINE_PTR(void *) address;
+#endif
 };
 
 struct limine_rsdp_request {
@@ -528,8 +550,13 @@ struct limine_rsdp_request {
 
 struct limine_smbios_response {
     uint64_t revision;
+#if LIMINE_API_REVISION >= 1
     uint64_t entry_32;
     uint64_t entry_64;
+#else
+    LIMINE_PTR(void *) entry_32;
+    LIMINE_PTR(void *) entry_64;
+#endif
 };
 
 struct limine_smbios_request {
@@ -544,7 +571,11 @@ struct limine_smbios_request {
 
 struct limine_efi_system_table_response {
     uint64_t revision;
+#if LIMINE_API_REVISION >= 1
     uint64_t address;
+#else
+    LIMINE_PTR(void *) address;
+#endif
 };
 
 struct limine_efi_system_table_request {

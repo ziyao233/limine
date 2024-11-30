@@ -51,6 +51,7 @@ override CPPFLAGS_FOR_TARGET := \
     $(CPPFLAGS_FOR_TARGET) \
     -DCOM_OUTPUT=$(COM_OUTPUT) \
     -DE9_OUTPUT=$(E9_OUTPUT) \
+    -DLIMINE_API_REVISION=1 \
     -MMD \
     -MP
 
