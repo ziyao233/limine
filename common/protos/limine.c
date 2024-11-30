@@ -1375,7 +1375,7 @@ FEAT_START
     struct limine_efi_memmap_response *efi_memmap_response =
         ext_mem_alloc(sizeof(struct limine_efi_memmap_response));
 
-    efi_memmap_response->memmap = base_revision <= 2 ? reported_addr(efi_mmap) : (uintptr_t)efi_mmap;
+    efi_memmap_response->memmap = reported_addr(efi_mmap);
     efi_memmap_response->memmap_size = efi_mmap_size;
     efi_memmap_response->desc_size = efi_desc_size;
     efi_memmap_response->desc_version = efi_desc_ver;

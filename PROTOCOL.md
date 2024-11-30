@@ -1218,7 +1218,7 @@ struct limine_efi_memmap_response {
 };
 ```
 
-* `memmap` - Address (HHDM for base revision <= 2, else physical) of the EFI memory map.
+* `memmap` - Address (HHDM, in bootloader reclaimable memory) of the EFI memory map.
 * `memmap_size` - Size in bytes of the EFI memory map.
 * `desc_size` - EFI memory map descriptor size in bytes.
 * `desc_version` - Version of EFI memory map descriptors.
