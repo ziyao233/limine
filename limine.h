@@ -513,7 +513,7 @@ struct limine_module_request {
 
 struct limine_rsdp_response {
     uint64_t revision;
-    LIMINE_PTR(void *) address;
+    uint64_t address;
 };
 
 struct limine_rsdp_request {
@@ -528,8 +528,8 @@ struct limine_rsdp_request {
 
 struct limine_smbios_response {
     uint64_t revision;
-    LIMINE_PTR(void *) entry_32;
-    LIMINE_PTR(void *) entry_64;
+    uint64_t entry_32;
+    uint64_t entry_64;
 };
 
 struct limine_smbios_request {
@@ -544,7 +544,7 @@ struct limine_smbios_request {
 
 struct limine_efi_system_table_response {
     uint64_t revision;
-    LIMINE_PTR(void *) address;
+    uint64_t address;
 };
 
 struct limine_efi_system_table_request {

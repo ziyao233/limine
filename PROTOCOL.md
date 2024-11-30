@@ -1131,7 +1131,7 @@ Response:
 ```c
 struct limine_rsdp_response {
     uint64_t revision;
-    void *address;
+    uint64_t address;
 };
 ```
 
@@ -1157,8 +1157,8 @@ Response:
 ```c
 struct limine_smbios_response {
     uint64_t revision;
-    void *entry_32;
-    void *entry_64;
+    uint64_t entry_32;
+    uint64_t entry_64;
 };
 ```
 
@@ -1185,7 +1185,7 @@ Response:
 ```c
 struct limine_efi_system_table_response {
     uint64_t revision;
-    void *address;
+    uint64_t address;
 };
 ```
 
