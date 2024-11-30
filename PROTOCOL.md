@@ -500,7 +500,7 @@ struct limine_stack_size_request {
 };
 ```
 
-* `stack_size` - The requested stack size in bytes (also used for SMP processors).
+* `stack_size` - The requested stack size in bytes (also used for MP processors).
 
 Response:
 ```c
@@ -715,19 +715,19 @@ Values assignable to `mode`, `max_mode`, and `min_mode`:
 #define LIMINE_PAGING_MODE_MIN LIMINE_PAGING_MODE_LOONGARCH64_4LVL
 ```
 
-### SMP (multiprocessor) Feature
+### MP (multiprocessor) Feature
 
 ID:
 ```c
-#define LIMINE_SMP_REQUEST { LIMINE_COMMON_MAGIC, 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 }
+#define LIMINE_MP_REQUEST { LIMINE_COMMON_MAGIC, 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 }
 ```
 
 Request:
 ```c
-struct limine_smp_request {
+struct limine_mp_request {
     uint64_t id[4];
     uint64_t revision;
-    struct limine_smp_response *response;
+    struct limine_mp_response *response;
     uint64_t flags;
 };
 ```
@@ -739,12 +739,12 @@ struct limine_smp_request {
 Response:
 
 ```c
-struct limine_smp_response {
+struct limine_mp_response {
     uint64_t revision;
     uint32_t flags;
     uint32_t bsp_lapic_id;
     uint64_t cpu_count;
-    struct limine_smp_info **cpus;
+    struct limine_mp_info **cpus;
 };
 ```
 
@@ -752,7 +752,7 @@ struct limine_smp_response {
 * `bsp_lapic_id` - The Local APIC ID of the bootstrap processor.
 * `cpu_count` - How many CPUs are present. It includes the bootstrap processor.
 * `cpus` - Pointer to an array of `cpu_count` pointers to
-`struct limine_smp_info` structures.
+`struct limine_mp_info` structures.
 
 Note: The presence of this request will prompt the bootloader to bootstrap
 the secondary processors. This will not be done if this request is not present.
@@ -761,11 +761,11 @@ Note: The MTRRs of APs will be synchronised by the bootloader to match
 the BSP, as Intel SDM requires (Vol. 3A, 12.11.5).
 
 ```c
-struct limine_smp_info;
+struct limine_mp_info;
 
-typedef void (*limine_goto_address)(struct limine_smp_info *);
+typedef void (*limine_goto_address)(struct limine_mp_info *);
 
-struct limine_smp_info {
+struct limine_mp_info {
     uint32_t processor_id;
     uint32_t lapic_id;
     uint64_t reserved;
@@ -778,7 +778,7 @@ struct limine_smp_info {
 * `lapic_id` - Local APIC ID of the processor as specified by the MADT
 * `goto_address` - An atomic write to this field causes the parked CPU to
 jump to the written address, on a 64KiB (or Stack Size Request size) stack. A pointer to the
-`struct limine_smp_info` structure of the CPU is passed in `RDI`. Other than
+`struct limine_mp_info` structure of the CPU is passed in `RDI`. Other than
 that, the CPU state will be the same as described for the bootstrap
 processor. This field is unused for the structure describing the bootstrap
 processor. For all CPUs, this field is guaranteed to be NULL when control is first passed
@@ -790,12 +790,12 @@ to the bootstrap processor.
 Response:
 
 ```c
-struct limine_smp_response {
+struct limine_mp_response {
     uint64_t revision;
     uint64_t flags;
     uint64_t bsp_mpidr;
     uint64_t cpu_count;
-    struct limine_smp_info **cpus;
+    struct limine_mp_info **cpus;
 };
 ```
 
@@ -803,17 +803,17 @@ struct limine_smp_response {
 * `bsp_mpidr` - MPIDR of the bootstrap processor (as read from `MPIDR_EL1`, with Res1 masked off).
 * `cpu_count` - How many CPUs are present. It includes the bootstrap processor.
 * `cpus` - Pointer to an array of `cpu_count` pointers to
-`struct limine_smp_info` structures.
+`struct limine_mp_info` structures.
 
 Note: The presence of this request will prompt the bootloader to bootstrap
 the secondary processors. This will not be done if this request is not present.
 
 ```c
-struct limine_smp_info;
+struct limine_mp_info;
 
-typedef void (*limine_goto_address)(struct limine_smp_info *);
+typedef void (*limine_goto_address)(struct limine_mp_info *);
 
-struct limine_smp_info {
+struct limine_mp_info {
     uint32_t processor_id;
     uint32_t reserved1;
     uint64_t mpidr;
@@ -827,7 +827,7 @@ struct limine_smp_info {
 * `mpidr` - MPIDR of the processor as specified by the MADT or device tree
 * `goto_address` - An atomic write to this field causes the parked CPU to
 jump to the written address, on a 64KiB (or Stack Size Request size) stack. A pointer to the
-`struct limine_smp_info` structure of the CPU is passed in `X0`. Other than
+`struct limine_mp_info` structure of the CPU is passed in `X0`. Other than
 that, the CPU state will be the same as described for the bootstrap
 processor. This field is unused for the structure describing the bootstrap
 processor.
@@ -838,12 +838,12 @@ processor.
 Response:
 
 ```c
-struct limine_smp_response {
+struct limine_mp_response {
     uint64_t revision;
     uint64_t flags;
     uint64_t bsp_hartid;
     uint64_t cpu_count;
-    struct limine_smp_info **cpus;
+    struct limine_mp_info **cpus;
 };
 ```
 
@@ -851,17 +851,17 @@ struct limine_smp_response {
 * `bsp_hartid` - Hart ID of the bootstrap processor as reported by the UEFI RISC-V Boot Protocol or the SBI.
 * `cpu_count` - How many CPUs are present. It includes the bootstrap processor.
 * `cpus` - Pointer to an array of `cpu_count` pointers to
-`struct limine_smp_info` structures.
+`struct limine_mp_info` structures.
 
 Note: The presence of this request will prompt the bootloader to bootstrap
 the secondary processors. This will not be done if this request is not present.
 
 ```c
-struct limine_smp_info;
+struct limine_mp_info;
 
-typedef void (*limine_goto_address)(struct limine_smp_info *);
+typedef void (*limine_goto_address)(struct limine_mp_info *);
 
-struct limine_smp_info {
+struct limine_mp_info {
     uint64_t processor_id;
     uint64_t hartid;
     uint64_t reserved;
@@ -874,7 +874,7 @@ struct limine_smp_info {
 * `hartid` - Hart ID of the processor as specified by the MADT or Device Tree.
 * `goto_address` - An atomic write to this field causes the parked CPU to
 jump to the written address, on a 64KiB (or Stack Size Request size) stack. A pointer to the
-`struct limine_smp_info` structure of the CPU is passed in `x10`(`a0`). Other than
+`struct limine_mp_info` structure of the CPU is passed in `x10`(`a0`). Other than
 that, the CPU state will be the same as described for the bootstrap
 processor. This field is unused for the structure describing the bootstrap
 processor.

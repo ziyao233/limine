@@ -38,7 +38,7 @@ struct trampoline_passed_info {
 } __attribute__((packed));
 
 static bool smp_start_ap(uint32_t lapic_id, struct gdtr *gdtr,
-                         struct limine_smp_info *info_struct,
+                         struct limine_mp_info *info_struct,
                          int paging_mode, uint32_t pagemap,
                          bool x2apic, bool nx, uint64_t hhdm, bool wp) {
     // Prepare the trampoline
@@ -102,7 +102,7 @@ static bool smp_start_ap(uint32_t lapic_id, struct gdtr *gdtr,
     return false;
 }
 
-struct limine_smp_info *init_smp(size_t   *cpu_count,
+struct limine_mp_info *init_smp(size_t   *cpu_count,
                                  uint32_t *_bsp_lapic_id,
                                  int       paging_mode,
                                  pagemap_t pagemap,
@@ -182,7 +182,7 @@ struct limine_smp_info *init_smp(size_t   *cpu_count,
         return NULL;
     }
 
-    struct limine_smp_info *ret = ext_mem_alloc(max_cpus * sizeof(struct limine_smp_info));
+    struct limine_mp_info *ret = ext_mem_alloc(max_cpus * sizeof(struct limine_mp_info));
     *cpu_count = 0;
 
     // Try to start all APs
@@ -200,7 +200,7 @@ struct limine_smp_info *init_smp(size_t   *cpu_count,
                 if (!((lapic->flags & 1) ^ ((lapic->flags >> 1) & 1)))
                     continue;
 
-                struct limine_smp_info *info_struct = &ret[*cpu_count];
+                struct limine_mp_info *info_struct = &ret[*cpu_count];
 
                 info_struct->processor_id = lapic->acpi_processor_uid;
                 info_struct->lapic_id = lapic->lapic_id;
@@ -237,7 +237,7 @@ struct limine_smp_info *init_smp(size_t   *cpu_count,
                 if (!((x2lapic->flags & 1) ^ ((x2lapic->flags >> 1) & 1)))
                     continue;
 
-                struct limine_smp_info *info_struct = &ret[*cpu_count];
+                struct limine_mp_info *info_struct = &ret[*cpu_count];
 
                 info_struct->processor_id = x2lapic->acpi_processor_uid;
                 info_struct->lapic_id = x2lapic->x2apic_id;
@@ -267,7 +267,7 @@ struct limine_smp_info *init_smp(size_t   *cpu_count,
     }
 
     if (*cpu_count == 0) {
-        pmm_free(ret, max_cpus * sizeof(struct limine_smp_info));
+        pmm_free(ret, max_cpus * sizeof(struct limine_mp_info));
         return NULL;
     }
 
@@ -301,7 +301,7 @@ enum {
 static uint32_t psci_cpu_on = 0xC4000003;
 
 static bool try_start_ap(int boot_method, uint64_t method_ptr,
-                         struct limine_smp_info *info_struct,
+                         struct limine_mp_info *info_struct,
                          uint64_t ttbr0, uint64_t ttbr1, uint64_t mair,
                          uint64_t tcr, uint64_t sctlr,
                          uint64_t hhdm_offset) {
@@ -405,7 +405,7 @@ static bool try_start_ap(int boot_method, uint64_t method_ptr,
     return false;
 }
 
-static struct limine_smp_info *try_acpi_smp(size_t   *cpu_count,
+static struct limine_mp_info *try_acpi_smp(size_t   *cpu_count,
                                             uint64_t *_bsp_mpidr,
                                             pagemap_t pagemap,
                                             uint64_t  mair,
@@ -465,7 +465,7 @@ static struct limine_smp_info *try_acpi_smp(size_t   *cpu_count,
         }
     }
 
-    struct limine_smp_info *ret = ext_mem_alloc(max_cpus * sizeof(struct limine_smp_info));
+    struct limine_mp_info *ret = ext_mem_alloc(max_cpus * sizeof(struct limine_mp_info));
     *cpu_count = 0;
 
     // Try to start all APs
@@ -481,7 +481,7 @@ static struct limine_smp_info *try_acpi_smp(size_t   *cpu_count,
                 if (!(gicc->flags & 1))
                     continue;
 
-                struct limine_smp_info *info_struct = &ret[*cpu_count];
+                struct limine_mp_info *info_struct = &ret[*cpu_count];
 
                 info_struct->processor_id = gicc->acpi_uid;
                 info_struct->mpidr = gicc->mpidr;
@@ -514,7 +514,7 @@ static struct limine_smp_info *try_acpi_smp(size_t   *cpu_count,
     return ret;
 }
 
-static struct limine_smp_info *try_dtb_smp(size_t   *cpu_count,
+static struct limine_mp_info *try_dtb_smp(size_t   *cpu_count,
                                            uint64_t *_bsp_mpidr,
                                            pagemap_t pagemap,
                                            uint64_t  mair,
@@ -584,7 +584,7 @@ static struct limine_smp_info *try_dtb_smp(size_t   *cpu_count,
         max_cpus++;
     }
 
-    struct limine_smp_info *ret = ext_mem_alloc(max_cpus * sizeof(struct limine_smp_info));
+    struct limine_mp_info *ret = ext_mem_alloc(max_cpus * sizeof(struct limine_mp_info));
 
     fdt_for_each_subnode(node, dtb, cpus) {
         const void *prop;
@@ -617,7 +617,7 @@ static struct limine_smp_info *try_dtb_smp(size_t   *cpu_count,
         }
 
 
-        struct limine_smp_info *info_struct = &ret[*cpu_count];
+        struct limine_mp_info *info_struct = &ret[*cpu_count];
 
         info_struct->processor_id = 0;
         info_struct->mpidr = mpidr;
@@ -695,14 +695,14 @@ static struct limine_smp_info *try_dtb_smp(size_t   *cpu_count,
 }
 
 
-struct limine_smp_info *init_smp(size_t   *cpu_count,
+struct limine_mp_info *init_smp(size_t   *cpu_count,
                                  uint64_t *bsp_mpidr,
                                  pagemap_t pagemap,
                                  uint64_t  mair,
                                  uint64_t  tcr,
                                  uint64_t  sctlr,
                                  uint64_t  hhdm_offset) {
-    struct limine_smp_info *info = NULL;
+    struct limine_mp_info *info = NULL;
 
     if (acpi_get_rsdp() && (info = try_acpi_smp(
                                     cpu_count, bsp_mpidr, pagemap,
@@ -729,7 +729,7 @@ struct trampoline_passed_info {
     uint64_t smp_tpl_hhdm_offset;
 };
 
-static bool smp_start_ap(size_t hartid, size_t satp, struct limine_smp_info *info_struct,
+static bool smp_start_ap(size_t hartid, size_t satp, struct limine_mp_info *info_struct,
                          uint64_t hhdm_offset) {
     static struct trampoline_passed_info passed_info;
 
@@ -754,7 +754,7 @@ static bool smp_start_ap(size_t hartid, size_t satp, struct limine_smp_info *inf
     return false;
 }
 
-struct limine_smp_info *init_smp(size_t *cpu_count, pagemap_t pagemap, uint64_t hhdm_offset) {
+struct limine_mp_info *init_smp(size_t *cpu_count, pagemap_t pagemap, uint64_t hhdm_offset) {
     size_t num_cpus = 0;
     for (struct riscv_hart *hart = hart_list; hart != NULL; hart = hart->next) {
         if (!(hart->flags & RISCV_HART_COPROC)) {
@@ -762,14 +762,14 @@ struct limine_smp_info *init_smp(size_t *cpu_count, pagemap_t pagemap, uint64_t 
         }
     }
 
-    struct limine_smp_info *ret = ext_mem_alloc(num_cpus * sizeof(struct limine_smp_info));
+    struct limine_mp_info *ret = ext_mem_alloc(num_cpus * sizeof(struct limine_mp_info));
 
     *cpu_count = 0;
     for (struct riscv_hart *hart = hart_list; hart != NULL; hart = hart->next) {
         if (hart->flags & RISCV_HART_COPROC) {
             continue;
         }
-        struct limine_smp_info *info_struct = &ret[*cpu_count];
+        struct limine_mp_info *info_struct = &ret[*cpu_count];
 
         info_struct->hartid = hart->hartid;
         info_struct->processor_id = hart->acpi_uid;

@@ -1393,51 +1393,51 @@ FEAT_END
     pagemap = build_pagemap(base_revision, nx_available, ranges, ranges_count,
                             physical_base, virtual_base, direct_map_offset);
 
-    // SMP
+    // MP
 FEAT_START
-    struct limine_smp_request *smp_request = get_request(LIMINE_SMP_REQUEST);
-    if (smp_request == NULL) {
+    struct limine_mp_request *mp_request = get_request(LIMINE_MP_REQUEST);
+    if (mp_request == NULL) {
         break; // next feature
     }
 
-    struct limine_smp_info *smp_info;
+    struct limine_mp_info *mp_info;
     size_t cpu_count;
 #if defined (__x86_64__) || defined (__i386__)
     uint32_t bsp_lapic_id;
-    smp_info = init_smp(&cpu_count, &bsp_lapic_id,
+    mp_info = init_smp(&cpu_count, &bsp_lapic_id,
                         paging_mode,
-                        pagemap, smp_request->flags & LIMINE_SMP_X2APIC, nx_available,
+                        pagemap, mp_request->flags & LIMINE_MP_X2APIC, nx_available,
                         direct_map_offset, true);
 #elif defined (__aarch64__)
     uint64_t bsp_mpidr;
 
-    smp_info = init_smp(&cpu_count, &bsp_mpidr,
+    mp_info = init_smp(&cpu_count, &bsp_mpidr,
                         pagemap, LIMINE_MAIR(fb_attr), LIMINE_TCR(tsz, pa), LIMINE_SCTLR,
                         direct_map_offset);
 #elif defined (__riscv)
-    smp_info = init_smp(&cpu_count, pagemap, direct_map_offset);
+    mp_info = init_smp(&cpu_count, pagemap, direct_map_offset);
 #elif defined (__loongarch64)
     cpu_count = 0;
-    smp_info = NULL; // TODO: LoongArch SMP
+    mp_info = NULL; // TODO: LoongArch MP
 #else
 #error Unknown architecture
 #endif
 
-    if (smp_info == NULL) {
+    if (mp_info == NULL) {
         break;
     }
 
     for (size_t i = 0; i < cpu_count; i++) {
 #if defined (__x86_64__) || defined (__i386__)
-        if (smp_info[i].lapic_id == bsp_lapic_id) {
+        if (mp_info[i].lapic_id == bsp_lapic_id) {
             continue;
         }
 #elif defined (__aarch64__)
-        if (smp_info[i].mpidr == bsp_mpidr) {
+        if (mp_info[i].mpidr == bsp_mpidr) {
             continue;
         }
 #elif defined (__riscv)
-        if (smp_info[i].hartid == bsp_hartid) {
+        if (mp_info[i].hartid == bsp_hartid) {
             continue;
         }
 #elif defined (__loongarch64)
@@ -1446,33 +1446,33 @@ FEAT_START
 #endif
 
         void *cpu_stack = ext_mem_alloc(stack_size) + stack_size;
-        smp_info[i].reserved = reported_addr(cpu_stack);
+        mp_info[i].reserved = reported_addr(cpu_stack);
     }
 
-    struct limine_smp_response *smp_response =
-        ext_mem_alloc(sizeof(struct limine_smp_response));
+    struct limine_mp_response *mp_response =
+        ext_mem_alloc(sizeof(struct limine_mp_response));
 
 #if defined (__x86_64__) || defined (__i386__)
-    smp_response->flags |= (smp_request->flags & LIMINE_SMP_X2APIC) && x2apic_check();
-    smp_response->bsp_lapic_id = bsp_lapic_id;
+    mp_response->flags |= (mp_request->flags & LIMINE_MP_X2APIC) && x2apic_check();
+    mp_response->bsp_lapic_id = bsp_lapic_id;
 #elif defined (__aarch64__)
-    smp_response->bsp_mpidr = bsp_mpidr;
+    mp_response->bsp_mpidr = bsp_mpidr;
 #elif defined (__riscv)
-    smp_response->bsp_hartid = bsp_hartid;
+    mp_response->bsp_hartid = bsp_hartid;
 #elif defined (__loongarch64)
 #else
 #error Unknown architecture
 #endif
 
-    uint64_t *smp_list = ext_mem_alloc(cpu_count * sizeof(uint64_t));
+    uint64_t *mp_list = ext_mem_alloc(cpu_count * sizeof(uint64_t));
     for (size_t i = 0; i < cpu_count; i++) {
-        smp_list[i] = reported_addr(&smp_info[i]);
+        mp_list[i] = reported_addr(&mp_info[i]);
     }
 
-    smp_response->cpu_count = cpu_count;
-    smp_response->cpus = reported_addr(smp_list);
+    mp_response->cpu_count = cpu_count;
+    mp_response->cpus = reported_addr(mp_list);
 
-    smp_request->response = reported_addr(smp_response);
+    mp_request->response = reported_addr(mp_response);
 FEAT_END
 
     // Memmap

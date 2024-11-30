@@ -10,7 +10,7 @@
 
 #if defined (__x86_64__) || defined (__i386__)
 
-struct limine_smp_info *init_smp(size_t   *cpu_count,
+struct limine_mp_info *init_smp(size_t   *cpu_count,
                                  uint32_t *_bsp_lapic_id,
                                  int       paging_mode,
                                  pagemap_t pagemap,
@@ -21,7 +21,7 @@ struct limine_smp_info *init_smp(size_t   *cpu_count,
 
 #elif defined (__aarch64__)
 
-struct limine_smp_info *init_smp(size_t   *cpu_count,
+struct limine_mp_info *init_smp(size_t   *cpu_count,
                                  uint64_t *bsp_mpidr,
                                  pagemap_t pagemap,
                                  uint64_t  mair,
@@ -31,7 +31,7 @@ struct limine_smp_info *init_smp(size_t   *cpu_count,
 
 #elif defined (__riscv)
 
-struct limine_smp_info *init_smp(size_t   *cpu_count,
+struct limine_mp_info *init_smp(size_t   *cpu_count,
                                  pagemap_t pagemap,
                                  uint64_t  hhdm_offset);
 

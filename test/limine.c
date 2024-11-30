@@ -126,8 +126,8 @@ static volatile struct limine_kernel_address_request kernel_address_request = {
 
 #ifndef __loongarch__
 __attribute__((section(".limine_requests")))
-static volatile struct limine_smp_request _smp_request = {
-    .id = LIMINE_SMP_REQUEST,
+static volatile struct limine_mp_request _mp_request = {
+    .id = LIMINE_MP_REQUEST,
     .revision = 0, .response = NULL
 };
 #endif
@@ -225,7 +225,7 @@ static void print_file(struct limine_file *file) {
 
 uint32_t ctr = 0;
 
-void ap_entry(struct limine_smp_info *info) {
+void ap_entry(struct limine_mp_info *info) {
     e9_printf("Hello from AP!");
 
 #if defined (__x86_64__)
@@ -466,27 +466,27 @@ FEAT_START
     e9_printf("Boot time: %d", boot_time_response->boot_time);
 FEAT_END
 
-// TODO: LoongArch SMP
+// TODO: LoongArch MP
 #ifndef __loongarch__
 FEAT_START
     e9_printf("");
-    if (_smp_request.response == NULL) {
-        e9_printf("SMP info not passed");
+    if (_mp_request.response == NULL) {
+        e9_printf("MP info not passed");
         break;
     }
-    struct limine_smp_response *smp_response = _smp_request.response;
-    e9_printf("SMP feature, revision %d", smp_response->revision);
-    e9_printf("Flags: %x", smp_response->flags);
+    struct limine_mp_response *mp_response = _mp_request.response;
+    e9_printf("MP feature, revision %d", mp_response->revision);
+    e9_printf("Flags: %x", mp_response->flags);
 #if defined (__x86_64__)
-    e9_printf("BSP LAPIC ID: %x", smp_response->bsp_lapic_id);
+    e9_printf("BSP LAPIC ID: %x", mp_response->bsp_lapic_id);
 #elif defined (__aarch64__)
-    e9_printf("BSP MPIDR: %x", smp_response->bsp_mpidr);
+    e9_printf("BSP MPIDR: %x", mp_response->bsp_mpidr);
 #elif defined (__riscv)
-    e9_printf("BSP Hart ID: %x", smp_response->bsp_hartid);
+    e9_printf("BSP Hart ID: %x", mp_response->bsp_hartid);
 #endif
-    e9_printf("CPU count: %d", smp_response->cpu_count);
-    for (size_t i = 0; i < smp_response->cpu_count; i++) {
-        struct limine_smp_info *cpu = smp_response->cpus[i];
+    e9_printf("CPU count: %d", mp_response->cpu_count);
+    for (size_t i = 0; i < mp_response->cpu_count; i++) {
+        struct limine_mp_info *cpu = mp_response->cpus[i];
         e9_printf("Processor ID: %x", cpu->processor_id);
 #if defined (__x86_64__)
         e9_printf("LAPIC ID: %x", cpu->lapic_id);
@@ -498,11 +498,11 @@ FEAT_START
 
 
 #if defined (__x86_64__)
-        if (cpu->lapic_id != smp_response->bsp_lapic_id) {
+        if (cpu->lapic_id != mp_response->bsp_lapic_id) {
 #elif defined (__aarch64__)
-        if (cpu->mpidr != smp_response->bsp_mpidr) {
+        if (cpu->mpidr != mp_response->bsp_mpidr) {
 #elif defined (__riscv)
-        if (cpu->hartid != smp_response->bsp_hartid) {
+        if (cpu->hartid != mp_response->bsp_hartid) {
 #endif
             uint32_t old_ctr = __atomic_load_n(&ctr, __ATOMIC_SEQ_CST);
 

@@ -328,19 +328,19 @@ struct LIMINE_DEPRECATED limine_5_level_paging_request {
 
 LIMINE_DEPRECATED_IGNORE_END
 
-/* SMP */
+/* MP */
 
-#define LIMINE_SMP_REQUEST { LIMINE_COMMON_MAGIC, 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 }
+#define LIMINE_MP_REQUEST { LIMINE_COMMON_MAGIC, 0x95a67b819a1b857e, 0xa0b61b723b6a73e0 }
 
-struct limine_smp_info;
+struct limine_mp_info;
 
-typedef void (*limine_goto_address)(struct limine_smp_info *);
+typedef void (*limine_goto_address)(struct limine_mp_info *);
 
 #if defined (__x86_64__) || defined (__i386__)
 
-#define LIMINE_SMP_X2APIC (1 << 0)
+#define LIMINE_MP_X2APIC (1 << 0)
 
-struct limine_smp_info {
+struct limine_mp_info {
     uint32_t processor_id;
     uint32_t lapic_id;
     uint64_t reserved;
@@ -348,17 +348,17 @@ struct limine_smp_info {
     uint64_t extra_argument;
 };
 
-struct limine_smp_response {
+struct limine_mp_response {
     uint64_t revision;
     uint32_t flags;
     uint32_t bsp_lapic_id;
     uint64_t cpu_count;
-    LIMINE_PTR(struct limine_smp_info **) cpus;
+    LIMINE_PTR(struct limine_mp_info **) cpus;
 };
 
 #elif defined (__aarch64__)
 
-struct limine_smp_info {
+struct limine_mp_info {
     uint32_t processor_id;
     uint32_t reserved1;
     uint64_t mpidr;
@@ -367,17 +367,17 @@ struct limine_smp_info {
     uint64_t extra_argument;
 };
 
-struct limine_smp_response {
+struct limine_mp_response {
     uint64_t revision;
     uint64_t flags;
     uint64_t bsp_mpidr;
     uint64_t cpu_count;
-    LIMINE_PTR(struct limine_smp_info **) cpus;
+    LIMINE_PTR(struct limine_mp_info **) cpus;
 };
 
 #elif defined (__riscv) && (__riscv_xlen == 64)
 
-struct limine_smp_info {
+struct limine_mp_info {
     uint64_t processor_id;
     uint64_t hartid;
     uint64_t reserved;
@@ -385,33 +385,33 @@ struct limine_smp_info {
     uint64_t extra_argument;
 };
 
-struct limine_smp_response {
+struct limine_mp_response {
     uint64_t revision;
     uint64_t flags;
     uint64_t bsp_hartid;
     uint64_t cpu_count;
-    LIMINE_PTR(struct limine_smp_info **) cpus;
+    LIMINE_PTR(struct limine_mp_info **) cpus;
 };
 
 #elif defined (__loongarch__) && (__loongarch_grlen == 64)
 
-struct limine_smp_info {
+struct limine_mp_info {
     uint64_t reserved;
 };
 
-struct limine_smp_response {
+struct limine_mp_response {
     uint64_t cpu_count;
-    LIMINE_PTR(struct limine_smp_info **) cpus;
+    LIMINE_PTR(struct limine_mp_info **) cpus;
 };
 
 #else
 #error Unknown architecture
 #endif
 
-struct limine_smp_request {
+struct limine_mp_request {
     uint64_t id[4];
     uint64_t revision;
-    LIMINE_PTR(struct limine_smp_response *) response;
+    LIMINE_PTR(struct limine_mp_response *) response;
     uint64_t flags;
 };
 
