@@ -1475,6 +1475,19 @@ FEAT_START
     mp_request->response = reported_addr(mp_response);
 FEAT_END
 
+#if defined(__riscv)
+    // RISC-V BSP Hart ID
+FEAT_START
+    struct limine_riscv_bsp_hartid_request *bsp_request = get_request(LIMINE_RISCV_BSP_HARTID_REQUEST);
+    if (bsp_request == NULL) {
+        break;
+    }
+    struct limine_riscv_bsp_hartid_response *bsp_response = ext_mem_alloc(sizeof(struct limine_riscv_bsp_hartid_response));
+    bsp_response->bsp_hartid = bsp_hartid;
+    bsp_request->response = reported_addr(bsp_response);
+FEAT_END
+#endif
+
     // Memmap
 FEAT_START
     struct limine_memmap_request *memmap_request = get_request(LIMINE_MEMMAP_REQUEST);
