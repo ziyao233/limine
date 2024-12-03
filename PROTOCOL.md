@@ -880,6 +880,34 @@ processor. This field is unused for the structure describing the bootstrap
 processor.
 * `extra_argument` - A free for use field.
 
+### RISC-V BSP Hart ID Feature
+
+ID:
+```c
+#define LIMINE_RISCV_BSP_HARTID_REQUEST { LIMINE_COMMON_MAGIC, 0x1369359f025525f9, 0x2ff2a56178391bb6 }
+```
+
+Request:
+```c
+struct limine_riscv_bsp_hartid_request {
+    uint64_t id[4];
+    uint64_t revision;
+    LIMINE_PTR(struct limine_riscv_bsp_hartid_response *) response;
+};
+```
+
+Response:
+```c
+struct limine_riscv_bsp_hartid_response {
+    uint64_t revision;
+    uint64_t bsp_hartid;
+};
+```
+
+* `bsp_hartid` - The Hart ID of the boot processor.
+Note: This request contains the same information as `limine_mp_response.bsp_hartid`,
+but doesn't boot up other APs.
+
 ### Memory Map Feature
 
 ID:

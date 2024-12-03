@@ -648,6 +648,21 @@ struct limine_dtb_request {
     LIMINE_PTR(struct limine_dtb_response *) response;
 };
 
+/* RISC-V Boot Hart ID */
+
+#define LIMINE_RISCV_BSP_HARTID_REQUEST { LIMINE_COMMON_MAGIC, 0x1369359f025525f9, 0x2ff2a56178391bb6 }
+
+struct limine_riscv_bsp_hartid_response {
+    uint64_t revision;
+    uint64_t bsp_hartid;
+};
+
+struct limine_riscv_bsp_hartid_request {
+    uint64_t id[4];
+    uint64_t revision;
+    LIMINE_PTR(struct limine_riscv_bsp_hartid_response *) response;
+};
+
 #ifdef __cplusplus
 }
 #endif

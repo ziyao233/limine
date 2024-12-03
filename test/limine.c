@@ -152,6 +152,14 @@ static volatile struct limine_paging_mode_request _pm_request = {
     .min_mode = LIMINE_PAGING_MODE_MIN
 };
 
+#ifdef __riscv
+__attribute__((section(".limine_requests")))
+static volatile struct limine_riscv_bsp_hartid_request _bsp_request = {
+    .id = LIMINE_RISCV_BSP_HARTID_REQUEST,
+    .revision = 0, .response = NULL,
+};
+#endif
+
 __attribute__((used, section(".limine_requests_end_marker")))
 static volatile LIMINE_REQUESTS_END_MARKER;
 
@@ -537,6 +545,16 @@ FEAT_START
     struct limine_paging_mode_response *pm_response = _pm_request.response;
     e9_printf("Paging mode feature, revision %d", pm_response->revision);
     e9_printf("  mode: %d", pm_response->mode);
+FEAT_END
+
+FEAT_START
+    e9_printf("");
+    struct limine_riscv_bsp_hartid_response *bsp_response = _bsp_request.response;
+    if (bsp_response == NULL) {
+        e9_printf("RISC-V BSP Hart ID was not passed");
+        break;
+    }
+    e9_printf("RISC-V BSP Hart ID: %x", bsp_response->bsp_hartid);
 FEAT_END
 
     for (;;);
