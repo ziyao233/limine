@@ -71,14 +71,18 @@ static size_t get_multiboot2_info_size(
 noreturn void multiboot2_load(char *config, char* cmdline) {
     struct file_handle *kernel_file;
 
-    char *kernel_path = config_get_value(config, 0, "KERNEL_PATH");
-    if (kernel_path == NULL)
-        panic(true, "multiboot2: KERNEL_PATH not specified");
+    char *kernel_path = config_get_value(config, 0, "PATH");
+    if (kernel_path == NULL) {
+        kernel_path = config_get_value(config, 0, "KERNEL_PATH");
+    }
+    if (kernel_path == NULL) {
+        panic(true, "multiboot2: Executable path not specified");
+    }
 
-    print("multiboot2: Loading kernel `%#`...\n", kernel_path);
+    print("multiboot2: Loading executable `%#`...\n", kernel_path);
 
     if ((kernel_file = uri_open(kernel_path)) == NULL)
-        panic(true, "multiboot2: Failed to open kernel with path `%#`. Is the path correct?", kernel_path);
+        panic(true, "multiboot2: Failed to open executable with path `%#`. Is the path correct?", kernel_path);
 
     uint8_t *kernel = freadall(kernel_file, MEMMAP_KERNEL_AND_MODULES);
 
@@ -365,7 +369,7 @@ noreturn void multiboot2_load(char *config, char* cmdline) {
 
     if (!check_usable_memory(ranges->target, ranges->target + ranges->length)) {
 reloc_fail:
-        panic(true, "multiboot2: Could not find viable load address for kernel");
+        panic(true, "multiboot2: Could not find viable load address for executable");
     }
 
     // Get the load base address (AKA the lowest target in the ranges)

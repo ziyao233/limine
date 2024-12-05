@@ -14,6 +14,9 @@ languages.
 
 ## General Notes
 
+The "executable" is the kernel or otherwise the freestanding application being loaded
+by the Limine boot protocol.
+
 All pointers are 64-bit wide. All non-NULL pointers point to the object with the
 higher half direct map offset already added to them, unless otherwise noted.
 
@@ -33,10 +36,10 @@ outside any specific feature. The specifics are going to be described as
 needed throughout this specification.
 
 Base revision 0 through 2 are considered deprecated. Base revision 0 is the default base revision
-a kernel is assumed to be requesting and complying to if no base revision tag
-is provided by the kernel, for backwards compatibility.
+an executable is assumed to be requesting and complying to if no base revision tag
+is provided by the executable, for backwards compatibility.
 
-A base revision tag is a set of 3 64-bit values placed somewhere in the loaded kernel
+A base revision tag is a set of 3 64-bit values placed somewhere in the loaded executable
 image on an 8-byte aligned boundary; the first 2 values are a magic number
 for the bootloader to be able to identify the tag, and the last value is the
 requested base revision number. Lack of base revision tag implies revision 0.
@@ -47,29 +50,29 @@ requested base revision number. Lack of base revision tag implies revision 0.
 ```
 
 If a bootloader drops support for an older base revision, the bootloader must
-fail to boot a kernel requesting such base revision. If a bootloader does not yet
+fail to boot an executable requesting such base revision. If a bootloader does not yet
 support a requested base revision (i.e. if the requested base revision is higher
-than the maximum base revision supported), it must boot the kernel using any
-arbitrary revision it supports, and communicate failure to comply to the kernel by
+than the maximum base revision supported), it must boot the executable using any
+arbitrary revision it supports, and communicate failure to comply to the executable by
 *leaving the 3rd component of the base revision tag unchanged*.
-On the other hand, if the kernel's requested base revision is supported,
+On the other hand, if the executable's requested base revision is supported,
 *the 3rd component of the base revision tag must be set to 0 by the bootloader*.
 
 Note: this means that unlike when the bootloader drops support for an older base
-revision and *it* is responsible for failing to boot the kernel, in case the
-bootloader does not yet support the kernel's requested base revision,
-it is up to the kernel itself to fail (or handle the condition otherwise).
+revision and *it* is responsible for failing to boot the executable, in case the
+bootloader does not yet support the executable's requested base revision,
+it is up to the executable itself to fail (or handle the condition otherwise).
 
 For any Limine-compliant bootloader supporting base revision 3, it is *mandatory*
-to load kernels requesting higher unsupported base revisions with at least
+to load executables requesting higher unsupported base revisions with at least
 base revision 3, and it is mandatory for it to always set the 2nd component of
-the base revision tag to the base revision actually used to load the kernel,
+the base revision tag to the base revision actually used to load the executable,
 regardless of whether it was the requested one or not.
 
 ## Features
 
 The protocol is centered around the concept of request/response - collectively
-named "features" - where the kernel requests some action or information from
+named "features" - where the executable requests some action or information from
 the bootloader, and the bootloader responds accordingly, if it is capable of
 doing so.
 
@@ -91,7 +94,7 @@ aligned. There may only be 1 of the same request. The bootloader will refuse
 to boot an executable with multiple of the same request IDs. Alternatively,
 it is possible to provide a list of requests explicitly via an executable file section.
 See "Limine Requests Section". (Note: this is deprecated and removed in base revision 1)
-* `revision` - The revision of the request that the kernel provides. This starts at 0 and is
+* `revision` - The revision of the request that the executable provides. This starts at 0 and is
 bumped whenever new members or functionality are added to the request structure.
 Bootloaders process requests in a backwards compatible manner, *always*. This
 means that if the bootloader does not support the revision of the request,
@@ -149,28 +152,28 @@ rather than them just being a hint.
 
 Note: *This behaviour is deprecated and removed as of base protocol revision 1*
 
-For kernels requesting deprecated base revision 0,
-if the executable kernel file contains a `.limine_reqs` section, the bootloader
+For executables requesting deprecated base revision 0,
+if the executable executable file contains a `.limine_reqs` section, the bootloader
 will, instead of scanning the executable for requests, fetch the requests
 from a NULL-terminated array of pointers to the provided requests, contained
 inside said section.
 
 ## Entry memory layout
 
-The protocol mandates kernels to load themselves at or above
-`0xffffffff80000000`. Lower half kernels are *not supported*. For relocatable kernels
+The protocol mandates executables to load themselves at or above
+`0xffffffff80000000`. Lower half executables are *not supported*. For relocatable executables
 asking to be loaded at address 0, a minimum slide of `0xffffffff80000000` is applied.
 
-At handoff, the kernel will be properly loaded and mapped with appropriate
+At handoff, the executable will be properly loaded and mapped with appropriate
 MMU permissions, as supervisor, at the requested virtual memory address (provided it is at
 or above `0xffffffff80000000`).
 
-No specific physical memory placement is guaranteed, except that the loaded kernel image
+No specific physical memory placement is guaranteed, except that the loaded executable image
 is guaranteed to be physically contiguous. In order to determine
-where the kernel is loaded in physical memory, see the Kernel Address feature
+where the executable is loaded in physical memory, see the Executable Address feature
 below.
 
-Alongside the loaded kernel, the bootloader will set up memory mappings as such:
+Alongside the loaded executable, the bootloader will set up memory mappings as such:
 
 ```
  Base Physical Address |                               | Base Virtual Address
@@ -197,7 +200,7 @@ of types:
 For base revision 3, the only memory map regions mapped to the HHDM are:
  - Usable
  - Bootloader reclaimable
- - Kernel and modules
+ - Executable and modules
  - Framebuffer
 
 For base revision 3, the unconditional direct map of the first 4GiB is dropped, and
@@ -207,7 +210,7 @@ The bootloader page tables are in bootloader-reclaimable memory (see Memory Map
 feature below), and their specific layout is undefined as long as they provide
 the above memory mappings.
 
-If the kernel is a position independent executable, the bootloader is free to
+If the executable is a position independent executable, the bootloader is free to
 relocate it as it sees fit, potentially performing KASLR (as specified by the
 config).
 
@@ -215,7 +218,7 @@ config).
 
 ### x86-64
 
-The kernel executable, loaded at or above `0xffffffff80000000`, sees all of its
+The executable, loaded at or above `0xffffffff80000000`, sees all of its
 segments mapped using write-back (WB) caching at the page tables level.
 
 All HHDM and identity map memory regions are mapped using write-back (WB) caching at the page
@@ -238,7 +241,7 @@ The MTRRs are left as the firmware set them up.
 
 ### aarch64
 
-The kernel executable, loaded at or above `0xffffffff80000000`, sees all of its
+The executable, loaded at or above `0xffffffff80000000`, sees all of its
 segments mapped using Normal Write-Back RW-Allocate non-transient caching mode.
 
 All HHDM and identity map memory regions are mapped using the Normal Write-Back RW-Allocate
@@ -249,13 +252,13 @@ framebuffer on the platform.
 The `MAIR_EL1` register will at least contain entries for the above-mentioned
 caching modes, in an unspecified order.
 
-In order to access MMIO regions, the kernel must ensure the correct caching mode
+In order to access MMIO regions, the executable must ensure the correct caching mode
 is used on its own.
 
 ### riscv64
 
 If the `Svpbmt` extension is available, all framebuffer memory regions are mapped
-with `PBMT=NC` to enable write-combining optimizations. The kernel executable,
+with `PBMT=NC` to enable write-combining optimizations. The executable,
 loaded at or above `0xffffffff80000000`, and all HHDM and identity map memory regions are mapped
 with the default `PBMT=PMA`.
 
@@ -264,7 +267,7 @@ everything is mapped with `PBMT=PMA`).
 
 ### loongarch64
 
-The kernel executable, loaded at or above `0xffffffff80000000`, sees all of its
+The executable, loaded at or above `0xffffffff80000000`, sees all of its
 segments mapped using the Coherent Cached (CC) memory access type (MAT).
 
 All HHDM and identity map memory regions are mapped using the Coherent Cached (CC)
@@ -293,7 +296,7 @@ with at least the following entries, starting at offset 0:
   - 64-bit code descriptor. Base and limit irrelevant. Readable.
   - 64-bit data descriptor. Base and limit irrelevant. Writable.
 
-The IDT is in an undefined state. Kernel must load its own.
+The IDT is in an undefined state. Executable must load its own.
 
 IF flag, VM flag, and direction flag are cleared on entry. Other flags
 undefined.
@@ -313,7 +316,7 @@ If booted by EFI/UEFI, boot services are exited.
 `rsp` is set to point to a stack, in bootloader-reclaimable memory, which is
 at least 64KiB (65536 bytes) in size, or the size specified in the Stack
 Size Request (see below). An invalid return address of 0 is pushed
-to the stack before jumping to the kernel.
+to the stack before jumping to the executable.
 
 All other general purpose registers are set to 0.
 
@@ -323,14 +326,14 @@ All other general purpose registers are set to 0.
 unless the Entry Point feature is requested (see below), in which case,
 the value of `PC` is going to be taken from there.
 
-The contents of the `VBAR_EL1` register are undefined, and the kernel must load
+The contents of the `VBAR_EL1` register are undefined, and the executable must load
 its own.
 
 The `MAIR_EL1` register contents are described above, in the caching section.
 
 All interrupts are masked (`PSTATE.{D, A, I, F}` are set to 1).
 
-The kernel is entered in little-endian AArch64 EL1t (EL1 with `PSTATE.SP` set to
+The executable is entered in little-endian AArch64 EL1t (EL1 with `PSTATE.SP` set to
 0, `PSTATE.E` set to 0, and `PSTATE.nRW` set to 0).
 
 Other fields of `PSTATE` are undefined.
@@ -353,7 +356,7 @@ paging. Additionally, for 5-level paging, `TCR_EL1.DS` is set to 1.
 `TTBR1_EL1` points to the bootloader-provided higher half page tables.
 For base revision 0, `TTBR0_EL1` points to the bootloader-provided identity
 mapping page tables, and is unspecified for all other base revisions and can
-thus be freely used by the kernel.
+thus be freely used by the executable.
 
 If booted by EFI/UEFI, boot services are exited.
 
@@ -372,13 +375,13 @@ At entry the machine is executing in Supervisor mode.
 unless the Entry Point feature is requested (see below), in which case, the
 value of `pc` is going to be taken from there.
 
-`x1`(`ra`) is set to 0, the kernel must not return from the entry point.
+`x1`(`ra`) is set to 0, the executable must not return from the entry point.
 
 `x2`(`sp`) is set to point to a stack, in bootloader-reclaimable memory, which is
 at least 64KiB (65536 bytes) in size, or the size specified in the Stack
 Size Request (see below).
 
-`x3`(`gp`) is set to 0, kernel must load its own global pointer if needed.
+`x3`(`gp`) is set to 0, executable must load its own global pointer if needed.
 
 All other general purpose registers, with the exception of `x5`(`t0`), are set to 0.
 
@@ -400,7 +403,7 @@ At entry the machine is executing in PLV0.
 unless the Entry Point feature is requested (see below), in which case, the
 value of `$pc` is going to be taken from there.
 
-`$r1`(`$ra`) is set to 0, the kernel must not return from the entry point.
+`$r1`(`$ra`) is set to 0, the executable must not return from the entry point.
 
 `$r3`(`$sp`) is set to point to a stack, in bootloader-reclaimable memory, which is
 at least 64KiB (65536 bytes) in size, or the size specified in the Stack
@@ -616,7 +619,7 @@ struct limine_video_mode {
 
 ### Paging Mode Feature
 
-The Paging Mode feature allows the kernel to control which paging mode is enabled
+The Paging Mode feature allows the executable to control which paging mode is enabled
 before control is passed to it.
 
 ID:
@@ -669,7 +672,7 @@ struct limine_paging_mode_response {
 ```
 
 The response indicates which paging mode was actually enabled by the bootloader.
-Kernels must be prepared to handle cases where the provided paging mode is
+Executables must be prepared to handle cases where the provided paging mode is
 not supported.
 
 #### x86-64
@@ -946,7 +949,7 @@ struct limine_memmap_response {
 #define LIMINE_MEMMAP_ACPI_NVS               3
 #define LIMINE_MEMMAP_BAD_MEMORY             4
 #define LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE 5
-#define LIMINE_MEMMAP_KERNEL_AND_MODULES     6
+#define LIMINE_MEMMAP_EXECUTABLE_AND_MODULES 6
 #define LIMINE_MEMMAP_FRAMEBUFFER            7
 
 struct limine_memmap_entry {
@@ -956,19 +959,23 @@ struct limine_memmap_entry {
 };
 ```
 
-Note: All these memory entry types, besides usable and bootloader reclaimable,
+All these memory entry types, besides usable and bootloader reclaimable,
 are meant to have an illustrative purpose only, and are not authoritative sources
-to be used as a means to find the addresses of kernel, modules, framebuffer, ACPI,
+to be used as a means to find the addresses of the executable, modules, framebuffer, ACPI,
 or otherwise. Use the specific Limine features to do that, if available, or other
 discovery means.
 
-Note: For base revisions <= 2, memory between 0 and 0x1000 is never marked as usable memory.
-The kernel and modules loaded are not marked as usable memory.
-They are marked as Kernel/Modules. The entries are guaranteed to be sorted by
-base address, lowest to highest. Usable and bootloader reclaimable entries
-are guaranteed to be 4096 byte aligned for both base and length. Usable and
-bootloader reclaimable entries are guaranteed not to overlap with any other
-entry. To the contrary, all non-usable entries (including kernel/modules) are
+For base revisions <= 2, memory between 0 and 0x1000 is never marked as usable memory.
+
+The executable and modules loaded are not marked as usable memory, but as Executable/Modules.
+
+The entries are guaranteed to be sorted by base address, lowest to highest.
+
+Usable and bootloader reclaimable entries are guaranteed to be 4096 byte aligned for
+both base and length.
+
+Usable and bootloader reclaimable entries are guaranteed not to overlap with any other
+entry. To the contrary, all non-usable entries (including executable/modules) are
 not guaranteed any alignment, nor is it guaranteed that they do not overlap
 other entries.
 
@@ -1000,32 +1007,32 @@ struct limine_entry_point_response {
 };
 ```
 
-### Kernel File Feature
+### Executable File Feature
 
 ID:
 ```c
-#define LIMINE_KERNEL_FILE_REQUEST { LIMINE_COMMON_MAGIC, 0xad97e90e83f1ed67, 0x31eb5d1c5ff23b69 }
+#define LIMINE_EXECUTABLE_FILE_REQUEST { LIMINE_COMMON_MAGIC, 0xad97e90e83f1ed67, 0x31eb5d1c5ff23b69 }
 ```
 
 Request:
 ```c
-struct limine_kernel_file_request {
+struct limine_executable_file_request {
     uint64_t id[4];
     uint64_t revision;
-    struct limine_kernel_file_response *response;
+    struct limine_executable_file_response *response;
 };
 ```
 
 Response:
 ```c
-struct limine_kernel_file_response {
+struct limine_executable_file_response {
     uint64_t revision;
-    struct limine_file *kernel_file;
+    struct limine_file *executable_file;
 };
 ```
 
-* `kernel_file` - Pointer to the `struct limine_file` structure (see below)
-for the kernel file.
+* `executable_file` - Pointer to the `struct limine_file` structure (see below)
+for the executable file.
 
 ### Module Feature
 
@@ -1056,7 +1063,7 @@ struct limine_module_request {
 };
 ```
 
-* `internal_module_count` - How many internal modules are passed by the kernel.
+* `internal_module_count` - How many internal modules are passed by the executable.
 * `internal_modules` - Pointer to an array of `internal_module_count` pointers to
 `struct limine_internal_module` structures.
 
@@ -1065,7 +1072,7 @@ Note: Internal modules are honoured if the module response has revision >= 1.
 As part of `struct limine_internal_module`:
 
 * `path` - Path to the module to load. This path is *relative* to the location of
-the kernel.
+the executable.
 * `cmdline` - Command line for the given module.
 * `flags` - Flags changing module loading behaviour:
   - `LIMINE_INTERNAL_MODULE_REQUIRED`: Fail if the requested module is not found.
@@ -1281,33 +1288,33 @@ struct limine_boot_time_response {
 
 * `boot_time` - The UNIX time on boot, in seconds, taken from the system RTC.
 
-### Kernel Address Feature
+### Executable Address Feature
 
 ID:
 ```c
-#define LIMINE_KERNEL_ADDRESS_REQUEST { LIMINE_COMMON_MAGIC, 0x71ba76863cc55f63, 0xb2644a48c516a487 }
+#define LIMINE_EXECUTABLE_ADDRESS_REQUEST { LIMINE_COMMON_MAGIC, 0x71ba76863cc55f63, 0xb2644a48c516a487 }
 ```
 
 Request:
 ```c
-struct limine_kernel_address_request {
+struct limine_executable_address_request {
     uint64_t id[4];
     uint64_t revision;
-    struct limine_kernel_address_response *response;
+    struct limine_executable_address_response *response;
 };
 ```
 
 Response:
 ```c
-struct limine_kernel_address_response {
+struct limine_executable_address_response {
     uint64_t revision;
     uint64_t physical_base;
     uint64_t virtual_base;
 };
 ```
 
-* `physical_base` - The physical base address of the kernel.
-* `virtual_base` - The virtual base address of the kernel.
+* `physical_base` - The physical base address of the executable.
+* `virtual_base` - The virtual base address of the executable.
 
 ### Device Tree Blob Feature
 
@@ -1341,4 +1348,4 @@ Note: Information contained in the `/chosen` node may not reflect the informatio
 given by bootloader tags, and as such the `/chosen` node properties should be ignored.
 
 Note: If the DTB contained `memory@...` nodes, they will get removed.
-Kernels may not rely on these nodes and should use the Memory Map feature instead.
+Executables may not rely on these nodes and should use the Memory Map feature instead.

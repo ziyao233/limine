@@ -10,7 +10,7 @@ PHDRS
 SECTIONS
 {
     . = SIZEOF_HEADERS;
-    kernel_start = . - SIZEOF_HEADERS;
+    executable_start = . - SIZEOF_HEADERS;
 
     .text : {
         *(.text .text.*)

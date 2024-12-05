@@ -53,8 +53,8 @@ static volatile struct limine_memmap_request memmap_request = {
 };
 
 __attribute__((section(".limine_requests")))
-static volatile struct limine_kernel_file_request kf_request = {
-    .id = LIMINE_KERNEL_FILE_REQUEST,
+static volatile struct limine_executable_file_request exec_file_request = {
+    .id = LIMINE_EXECUTABLE_FILE_REQUEST,
     .revision = 0, .response = NULL
 };
 
@@ -119,8 +119,8 @@ static volatile struct limine_boot_time_request boot_time_request = {
 };
 
 __attribute__((section(".limine_requests")))
-static volatile struct limine_kernel_address_request kernel_address_request = {
-    .id = LIMINE_KERNEL_ADDRESS_REQUEST,
+static volatile struct limine_executable_address_request executable_address_request = {
+    .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST,
     .revision = 0, .response = NULL
 };
 
@@ -177,8 +177,8 @@ static char *get_memmap_type(uint64_t type) {
             return "Bad memory";
         case LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE:
             return "Bootloader reclaimable";
-        case LIMINE_MEMMAP_KERNEL_AND_MODULES:
-            return "Kernel and modules";
+        case LIMINE_MEMMAP_EXECUTABLE_AND_MODULES:
+            return "Executable and modules";
         case LIMINE_MEMMAP_FRAMEBUFFER:
             return "Framebuffer";
         default:
@@ -254,7 +254,7 @@ void ap_entry(struct limine_mp_info *info) {
 #define FEAT_START do {
 #define FEAT_END } while (0);
 
-extern char kernel_start[];
+extern char executable_start[];
 
 struct flanterm_context *ft_ctx = NULL;
 
@@ -290,10 +290,10 @@ static void limine_main(void) {
         0
     );
 
-    uint64_t kernel_slide = (uint64_t)kernel_start - 0xffffffff80000000;
+    uint64_t executable_slide = (uint64_t)executable_start - 0xffffffff80000000;
 
-    e9_printf("Kernel start: %x", kernel_start);
-    e9_printf("Kernel slide: %x", kernel_slide);
+    e9_printf("Executable start: %x", executable_start);
+    e9_printf("Executable slide: %x", executable_slide);
 
 FEAT_START
     e9_printf("");
@@ -320,14 +320,14 @@ FEAT_END
 
 FEAT_START
     e9_printf("");
-    if (kernel_address_request.response == NULL) {
-        e9_printf("Kernel address not passed");
+    if (executable_address_request.response == NULL) {
+        e9_printf("Executable address not passed");
         break;
     }
-    struct limine_kernel_address_response *ka_response = kernel_address_request.response;
-    e9_printf("Kernel address feature, revision %d", ka_response->revision);
-    e9_printf("Physical base: %x", ka_response->physical_base);
-    e9_printf("Virtual base: %x", ka_response->virtual_base);
+    struct limine_executable_address_response *exec_addr_response = executable_address_request.response;
+    e9_printf("Executable address feature, revision %d", exec_addr_response->revision);
+    e9_printf("Physical base: %x", exec_addr_response->physical_base);
+    e9_printf("Virtual base: %x", exec_addr_response->virtual_base);
 FEAT_END
 
 FEAT_START
@@ -390,13 +390,13 @@ FEAT_END
 
 FEAT_START
     e9_printf("");
-    if (kf_request.response == NULL) {
-        e9_printf("Kernel file not passed");
+    if (exec_file_request.response == NULL) {
+        e9_printf("Executable file not passed");
         break;
     }
-    struct limine_kernel_file_response *kf_response = kf_request.response;
-    e9_printf("Kernel file feature, revision %d", kf_response->revision);
-    print_file(kf_response->kernel_file);
+    struct limine_executable_file_response *exec_file_response = exec_file_request.response;
+    e9_printf("Executable file feature, revision %d", exec_file_response->revision);
+    print_file(exec_file_response->executable_file);
 FEAT_END
 
 FEAT_START
@@ -547,6 +547,7 @@ FEAT_START
     e9_printf("  mode: %d", pm_response->mode);
 FEAT_END
 
+#if defined (__riscv)
 FEAT_START
     e9_printf("");
     struct limine_riscv_bsp_hartid_response *bsp_response = _bsp_request.response;
@@ -556,6 +557,7 @@ FEAT_START
     }
     e9_printf("RISC-V BSP Hart ID: %x", bsp_response->bsp_hartid);
 FEAT_END
+#endif
 
     for (;;);
 }

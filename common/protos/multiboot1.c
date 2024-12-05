@@ -51,14 +51,18 @@ static void *mb1_info_alloc(void **mb1_info_raw, size_t size) {
 noreturn void multiboot1_load(char *config, char *cmdline) {
     struct file_handle *kernel_file;
 
-    char *kernel_path = config_get_value(config, 0, "KERNEL_PATH");
-    if (kernel_path == NULL)
-        panic(true, "multiboot1: KERNEL_PATH not specified");
+    char *kernel_path = config_get_value(config, 0, "PATH");
+    if (kernel_path == NULL) {
+        kernel_path = config_get_value(config, 0, "KERNEL_PATH");
+    }
+    if (kernel_path == NULL) {
+        panic(true, "multiboot1: Executable path not specified");
+    }
 
-    print("multiboot1: Loading kernel `%#`...\n", kernel_path);
+    print("multiboot1: Loading executable `%#`...\n", kernel_path);
 
     if ((kernel_file = uri_open(kernel_path)) == NULL)
-        panic(true, "multiboot1: Failed to open kernel with path `%#`. Is the path correct?", kernel_path);
+        panic(true, "multiboot1: Failed to open executable with path `%#`. Is the path correct?", kernel_path);
 
     uint8_t *kernel = freadall(kernel_file, MEMMAP_KERNEL_AND_MODULES);
 

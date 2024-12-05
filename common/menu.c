@@ -97,6 +97,7 @@ static const char *VALID_KEYS[] = {
     "COMMENT",
     "PROTOCOL",
     "CMDLINE",
+    "PATH",
     "KERNEL_CMDLINE",
     "KERNEL_PATH",
     "INITRD_PATH",

@@ -409,15 +409,19 @@ noreturn void limine_load(char *config, char *cmdline) {
     uint32_t eax, ebx, ecx, edx;
 #endif
 
-    char *kernel_path = config_get_value(config, 0, "KERNEL_PATH");
-    if (kernel_path == NULL)
-        panic(true, "limine: KERNEL_PATH not specified");
+    char *kernel_path = config_get_value(config, 0, "PATH");
+    if (kernel_path == NULL) {
+        kernel_path = config_get_value(config, 0, "KERNEL_PATH");
+    }
+    if (kernel_path == NULL) {
+        panic(true, "limine: Executable path not specified");
+    }
 
-    print("limine: Loading kernel `%#`...\n", kernel_path);
+    print("limine: Loading executable `%#`...\n", kernel_path);
 
     struct file_handle *kernel_file;
     if ((kernel_file = uri_open(kernel_path)) == NULL)
-        panic(true, "limine: Failed to open kernel with path `%#`. Is the path correct?", kernel_path);
+        panic(true, "limine: Failed to open executable with path `%#`. Is the path correct?", kernel_path);
 
     char *k_path_copy = ext_mem_alloc(strlen(kernel_path) + 1);
     strcpy(k_path_copy, kernel_path);
@@ -787,18 +791,18 @@ FEAT_START
     }
 
     if (kern_max_mode < kern_min_mode) {
-        panic(true, "limine: Kernel's paging max_mode lower than min_mode");
+        panic(true, "limine: Executable's paging max_mode lower than min_mode");
     }
 
     if (paging_mode > kern_max_mode) {
         if (kern_max_mode < min_supported_paging_mode) {
-            panic(true, "limine: Kernel's maximum supported paging mode lower than minimum allowable paging mode");
+            panic(true, "limine: Executable's maximum supported paging mode lower than minimum allowable paging mode");
         }
         paging_mode = kern_max_mode;
     }
     if (paging_mode < kern_min_mode) {
         if (kern_min_mode > max_supported_paging_mode) {
-            panic(true, "limine: Kernel's minimum supported paging mode higher than maximum allowable paging mode");
+            panic(true, "limine: Executable's minimum supported paging mode higher than maximum allowable paging mode");
         }
         paging_mode = kern_min_mode;
     }
@@ -898,20 +902,20 @@ FEAT_START
     firmware_type_request->response = reported_addr(firmware_type_response);
 FEAT_END
 
-    // Kernel address feature
+    // Executable address feature
 FEAT_START
-    struct limine_kernel_address_request *kernel_address_request = get_request(LIMINE_KERNEL_ADDRESS_REQUEST);
-    if (kernel_address_request == NULL) {
+    struct limine_executable_address_request *executable_address_request = get_request(LIMINE_EXECUTABLE_ADDRESS_REQUEST);
+    if (executable_address_request == NULL) {
         break; // next feature
     }
 
-    struct limine_kernel_address_response *kernel_address_response =
-        ext_mem_alloc(sizeof(struct limine_kernel_address_response));
+    struct limine_executable_address_response *executable_address_response =
+        ext_mem_alloc(sizeof(struct limine_executable_address_response));
 
-    kernel_address_response->physical_base = physical_base;
-    kernel_address_response->virtual_base = virtual_base;
+    executable_address_response->physical_base = physical_base;
+    executable_address_response->virtual_base = virtual_base;
 
-    kernel_address_request->response = reported_addr(kernel_address_response);
+    executable_address_request->response = reported_addr(executable_address_response);
 FEAT_END
 
     // HHDM feature
@@ -1019,7 +1023,7 @@ FEAT_START
 
     if (dtb) {
         // Delete all /memory@... nodes.
-        // The kernel must use the given UEFI memory map instead.
+        // The executable must use the given UEFI memory map instead.
         while (true) {
             int offset = fdt_subnode_offset_namelen(dtb, 0, "memory@", 7);
 
@@ -1063,19 +1067,19 @@ FEAT_START
     stack_size_request->response = reported_addr(stack_size_response);
 FEAT_END
 
-    // Kernel file
+    // Executable file
 FEAT_START
-    struct limine_kernel_file_request *kernel_file_request = get_request(LIMINE_KERNEL_FILE_REQUEST);
-    if (kernel_file_request == NULL) {
+    struct limine_executable_file_request *executable_file_request = get_request(LIMINE_EXECUTABLE_FILE_REQUEST);
+    if (executable_file_request == NULL) {
         break; // next feature
     }
 
-    struct limine_kernel_file_response *kernel_file_response =
-        ext_mem_alloc(sizeof(struct limine_kernel_file_response));
+    struct limine_executable_file_response *executable_file_response =
+        ext_mem_alloc(sizeof(struct limine_executable_file_response));
 
-    kernel_file_response->kernel_file = reported_addr(kf);
+    executable_file_response->executable_file = reported_addr(kf);
 
-    kernel_file_request->response = reported_addr(kernel_file_response);
+    executable_file_request->response = reported_addr(executable_file_response);
 FEAT_END
 
     // Modules
@@ -1533,7 +1537,7 @@ FEAT_START
                 _memmap[i].type = LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE;
                 break;
             case MEMMAP_KERNEL_AND_MODULES:
-                _memmap[i].type = LIMINE_MEMMAP_KERNEL_AND_MODULES;
+                _memmap[i].type = LIMINE_MEMMAP_EXECUTABLE_AND_MODULES;
                 break;
             case MEMMAP_FRAMEBUFFER:
                 _memmap[i].type = LIMINE_MEMMAP_FRAMEBUFFER;

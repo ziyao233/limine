@@ -113,7 +113,7 @@ Editor control options:
 *Locally assignable (non protocol specific) options* are:
 
 * `comment` - An optional comment string that will be displayed by the bootloader on the menu when an entry is selected.
-* `protocol` - The boot protocol that will be used to boot the kernel. Valid protocols are: `linux`, `limine`, `multiboot` (or `multiboot1`), `multiboot2`, `efi_chainload`, `bios_chainload`, and `chainload_next`.
+* `protocol` - The boot protocol that will be used to boot the kernel/executable. Valid protocols are: `linux`, `limine`, `multiboot` (or `multiboot1`), `multiboot2`, `efi_chainload`, `bios_chainload`, and `chainload_next`.
 * `cmdline` - The command line string to be passed to the kernel/executable. Can be omitted.
 * `kernel_cmdline` - Alias of `cmdline`.
 
@@ -127,11 +127,12 @@ Editor control options:
   * `dtb_path` - A device tree blob to pass instead of the one provided by the firmware.
 
 * Limine protocol:
-  * `kernel_path` - The path of the kernel.
+  * `path` - The path of the executable.
+  * `kernel_path` - Alias of `path`.
   * `module_path` - The path to a module. This option can be specified multiple times to specify multiple modules.
   * `module_cmdline` - A command line to be passed to a module. This option can also be specified multiple times. It applies to the module described by the last module option specified.
   * `resolution` - The resolution to be used. This setting takes the form of `<width>x<height>x<bpp>`. If the resolution is not available, Limine will pick another one automatically. Omitting `<bpp>` will default to 32.
-  * `kaslr` - For relocatable kernels, if set to `no`, disable kernel address space layout randomisation. KASLR is enabled by default.
+  * `kaslr` - For relocatable executables, if set to `no`, disable kernel address space layout randomisation. KASLR is enabled by default.
   * `randomise_hhdm_base` - If set to `yes`, randomise the base address of the higher half direct map. If set to `no`, do not. By default it is `yes` if KASLR is supported and enabled, else it is `no`.
   * `randomize_hhdm_base` - Alias of `randomise_hhdm_base`.
   * `max_paging_mode`, `min_paging_mode` - Limit the maximum and minimum paging modes to one of the following:
@@ -142,10 +143,11 @@ Editor control options:
   * `dtb_path` - A device tree blob to pass instead of the one provided by the firmware.
 
 * multiboot1 and multiboot2 protocols:
-  * `kernel_path` - The path of the kernel.
+  * `path` - The path of the executable.
+  * `kernel_path` - Alias of `path`.
   * `module_path` - The path to a module. This option can be specified multiple times to specify multiple modules.
   * `module_string` - A string to be passed to a module. This option can also be specified multiple times. It applies to the module described by the last module option specified.
-  * `resolution` - The resolution to be used should the kernel request a graphical framebuffer. This setting takes the form of `<width>x<height>x<bpp>` and *overrides* any resolution requested by the kernel. If the resolution is not available, Limine will pick another one automatically. Omitting `<bpp>` will default to 32.
+  * `resolution` - The resolution to be used should the executable request a graphical framebuffer. This setting takes the form of `<width>x<height>x<bpp>` and *overrides* any resolution requested by the executable. If the resolution is not available, Limine will pick another one automatically. Omitting `<bpp>` will default to 32.
   * `textmode` - If set to `yes`, prefer text mode. (BIOS only)
 
 * EFI Chainload protocol:
