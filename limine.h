@@ -121,6 +121,7 @@ struct limine_bootloader_info_request {
 #define LIMINE_FIRMWARE_TYPE_X86BIOS 0
 #define LIMINE_FIRMWARE_TYPE_UEFI32 1
 #define LIMINE_FIRMWARE_TYPE_UEFI64 2
+#define LIMINE_FIRMWARE_TYPE_SBI 3
 
 struct limine_firmware_type_response {
     uint64_t revision;
