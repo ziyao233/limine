@@ -1,3 +1,20 @@
+2024-12-05  mintsuki  <mintsuki@protonmail.com>
+
+    *** Release 8.6.0 ***
+
+    Noteworthy changes compared to the previous release, 8.5.0:
+
+    New features:
+        - Limine boot protocol: Specify and implement new "RISC-V BSP Hart ID"
+          feature.
+        - Limine boot protocol: Add a new "SBI" firmware type to the firmware
+          type feature
+        - Limine boot protocol: Add a new API revision 2 to the limine.h header
+          file. This replaces many mentions of 'kernel' with a more neutral
+          'executable' instead.
+        - Config: add 'path' alias for 'kernel_path' for the Limine and
+          multiboot1 and 2 protocols.
+
 2024-11-30  mintsuki  <mintsuki@protonmail.com>
 
     *** Release 8.5.0 ***
