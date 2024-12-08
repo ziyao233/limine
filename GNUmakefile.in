@@ -7,6 +7,8 @@ export SOURCE_DATE_EPOCH
 override SOURCE_DATE_EPOCH_TOUCH := @SOURCE_DATE_EPOCH_TOUCH@
 
 override PACKAGE_TARNAME := @PACKAGE_TARNAME@
+override PACKAGE_VERSION := @PACKAGE_VERSION@
+override DIST_OUTPUT := $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)
 
 prefix := @prefix@
 exec_prefix := @exec_prefix@
@@ -86,8 +88,6 @@ LDFLAGS_FOR_TARGET := @LDFLAGS_FOR_TARGET@
 export LDFLAGS_FOR_TARGET
 NASMFLAGS_FOR_TARGET := @NASMFLAGS_FOR_TARGET@
 export NASMFLAGS_FOR_TARGET
-
-override LIMINE_VERSION := @PACKAGE_VERSION@
 
 override STAGE1_FILES := $(shell find '$(call SHESCAPE,$(SRCDIR))/stage1' -type f -name '*.asm' | LC_ALL=C sort)
 
@@ -295,40 +295,40 @@ limine-uefi-loongarch64-clean: common-uefi-loongarch64-clean
 
 .PHONY: dist
 dist:
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)"
-	$(MKDIR_P) '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)"
-	cp -r '$(call SHESCAPE,$(SRCDIR))'/.git '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)"/
-	cd '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)" && git checkout .
-	cd '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)" && ./bootstrap
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/common/flanterm/.git"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/common/flanterm/.gitignore"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/freestnd-c-hdrs-0bsd/.git"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/nyu-efi/.git"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/nyu-efi/.gitignore"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/cc-runtime/.git"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/cc-runtime/.gitignore"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/dtc"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/tinf"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/common/lib/stb_image.h.nopatch"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/.git"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/.gitignore"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/.github"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/README.md"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/autom4te.cache"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/test"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/test.mk"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/logo.png"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/screenshot.png"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/bochsrc"
-	echo "$(LIMINE_VERSION)" > '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)/version"
-	cd '$(call SHESCAPE,$(BUILDDIR))' && tar -cf "limine-$(LIMINE_VERSION).tar" "limine-$(LIMINE_VERSION)"
-	cd '$(call SHESCAPE,$(BUILDDIR))' && gzip < "limine-$(LIMINE_VERSION).tar" > "limine-$(LIMINE_VERSION).tar.gz"
-	cd '$(call SHESCAPE,$(BUILDDIR))' && ( lzip < "limine-$(LIMINE_VERSION).tar" > "limine-$(LIMINE_VERSION).tar.lz" || rm -f "limine-$(LIMINE_VERSION).tar.lz" )
-	cd '$(call SHESCAPE,$(BUILDDIR))' && ( bzip2 < "limine-$(LIMINE_VERSION).tar" > "limine-$(LIMINE_VERSION).tar.bz2" || rm -f "limine-$(LIMINE_VERSION).tar.bz2" )
-	cd '$(call SHESCAPE,$(BUILDDIR))' && ( xz < "limine-$(LIMINE_VERSION).tar" > "limine-$(LIMINE_VERSION).tar.xz" || rm -f "limine-$(LIMINE_VERSION).tar.xz" )
-	cd '$(call SHESCAPE,$(BUILDDIR))' && ( zstd < "limine-$(LIMINE_VERSION).tar" > "limine-$(LIMINE_VERSION).tar.zst" || rm -f "limine-$(LIMINE_VERSION).tar.zst" )
-	cd '$(call SHESCAPE,$(BUILDDIR))' && rm "limine-$(LIMINE_VERSION).tar"
-	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"limine-$(LIMINE_VERSION)"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)"
+	$(MKDIR_P) '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)"
+	cp -r '$(call SHESCAPE,$(SRCDIR))'/.git '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)"/
+	cd '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)" && git checkout .
+	cd '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)" && ./bootstrap
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/common/flanterm/.git"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/common/flanterm/.gitignore"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/freestnd-c-hdrs-0bsd/.git"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/nyu-efi/.git"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/nyu-efi/.gitignore"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/cc-runtime/.git"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/cc-runtime/.gitignore"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/dtc"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/tinf"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/common/lib/stb_image.h.nopatch"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/.git"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/.gitignore"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/.github"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/README.md"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/autom4te.cache"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/test"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/test.mk"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/logo.png"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/screenshot.png"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/bochsrc"
+	echo "$(PACKAGE_VERSION)" > '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)/version"
+	cd '$(call SHESCAPE,$(BUILDDIR))' && tar -cf "$(DIST_OUTPUT).tar" "$(DIST_OUTPUT)"
+	cd '$(call SHESCAPE,$(BUILDDIR))' && gzip < "$(DIST_OUTPUT).tar" > "$(DIST_OUTPUT).tar.gz"
+	cd '$(call SHESCAPE,$(BUILDDIR))' && ( lzip < "$(DIST_OUTPUT).tar" > "$(DIST_OUTPUT).tar.lz" || rm -f "$(DIST_OUTPUT).tar.lz" )
+	cd '$(call SHESCAPE,$(BUILDDIR))' && ( bzip2 < "$(DIST_OUTPUT).tar" > "$(DIST_OUTPUT).tar.bz2" || rm -f "$(DIST_OUTPUT).tar.bz2" )
+	cd '$(call SHESCAPE,$(BUILDDIR))' && ( xz < "$(DIST_OUTPUT).tar" > "$(DIST_OUTPUT).tar.xz" || rm -f "$(DIST_OUTPUT).tar.xz" )
+	cd '$(call SHESCAPE,$(BUILDDIR))' && ( zstd < "$(DIST_OUTPUT).tar" > "$(DIST_OUTPUT).tar.zst" || rm -f "$(DIST_OUTPUT).tar.zst" )
+	cd '$(call SHESCAPE,$(BUILDDIR))' && rm "$(DIST_OUTPUT).tar"
+	rm -rf '$(call SHESCAPE,$(BUILDDIR))'/"$(DIST_OUTPUT)"
 
 .PHONY: distclean
 distclean: clean
