@@ -37,12 +37,21 @@ struct linux_header {
 } __attribute__((packed));
 
 struct linux_efi_memreserve {
-    int	size;
+    int size;
     int count;
     uint64_t next;
 };
 
 // End of Linux code
+
+struct boot_param {
+    void *kernel_base;
+    size_t kernel_size;
+    void *module_base;
+    size_t module_size;
+    char *cmdline;
+    void *dtb;
+};
 
 #if defined(__riscv)
 #define LINUX_HEADER_MAGIC2             0x05435352
@@ -51,6 +60,117 @@ struct linux_efi_memreserve {
 #elif defined(__aarch64__)
 #define LINUX_HEADER_MAGIC2             0x644d5241
 #endif
+
+const char *verify_kernel(struct boot_param *p) {
+    struct linux_header *header = p->kernel_base;
+
+    if (header->magic2 != LINUX_HEADER_MAGIC2) {
+        return "kernel header magic does not match";
+    }
+
+    // riscv-specific version requirements
+#if defined(__riscv)
+    printv("linux: boot protocol version %d.%d\n",
+           LINUX_HEADER_MAJOR_VER(header->version),
+           LINUX_HEADER_MINOR_VER(header->version));
+    if (LINUX_HEADER_MAJOR_VER(header->version) == 0
+     && LINUX_HEADER_MINOR_VER(header->version) < 2) {
+        return "linux: protocols < 0.2 are not supported";
+    }
+#endif
+
+    return NULL;
+}
+
+void load_files(struct boot_param *p, char *config) {
+    char *dtb_path = config_get_value(config, 0, "DTB_PATH");
+
+    if (dtb_path) {
+        struct file_handle *dtb_file;
+        if ((dtb_file = uri_open(dtb_path)) == NULL)
+            panic(true, "linux: Failed to open device tree blob with path `%#`. Is the path correct?", dtb_path);
+
+        p->dtb = freadall(dtb_file, MEMMAP_BOOTLOADER_RECLAIMABLE);
+        fclose(dtb_file);
+    }
+
+    char *module_path = config_get_value(config, 0, "MODULE_PATH");
+    if (module_path) {
+        print("linux: Loading module `%#`...\n", module_path);
+
+        struct file_handle *module_file = uri_open(module_path);
+        if (!module_file) {
+            panic(true, "linux: failed to open module `%s`. Is the path correct?", module_path);
+        }
+
+        p->module_size = module_file->size;
+        p->module_base = ext_mem_alloc_type_aligned(
+                        ALIGN_UP(p->module_size, 4096),
+                        MEMMAP_KERNEL_AND_MODULES, 4096);
+
+        fread(module_file, p->module_base, 0, p->module_size);
+        fclose(module_file);
+        printv("linux: loaded module `%s` at %x, size %u\n", module_path, p->module_base, p->module_size);
+    }
+}
+
+void prepare_device_tree_blob(struct boot_param *p) {
+    void *dtb = p->dtb;
+    int ret;
+
+    // Delete all /memory@... nodes. Linux will use the given UEFI memory map
+    // instead.
+    while (true) {
+        int offset = fdt_subnode_offset_namelen(dtb, 0, "memory@", 7);
+
+        if (offset == -FDT_ERR_NOTFOUND) {
+            break;
+        }
+
+        if (offset < 0) {
+            panic(true, "linux: failed to find node: '%s'", fdt_strerror(offset));
+        }
+
+        ret = fdt_del_node(dtb, offset);
+        if (ret < 0) {
+            panic(true, "linux: failed to delete memory node: '%s'", fdt_strerror(ret));
+        }
+    }
+
+    if (p->module_base) {
+        ret = fdt_set_chosen_uint64(dtb, "linux,initrd-start", (uint64_t)p->module_base);
+        if (ret < 0) {
+            panic(true, "linux: cannot set initrd parameter: '%s'", fdt_strerror(ret));
+        }
+
+        ret = fdt_set_chosen_uint64(dtb, "linux,initrd-end", (uint64_t)(p->module_base + p->module_size));
+        if (ret < 0) {
+            panic(true, "linux: cannot set initrd parameter: '%s'", fdt_strerror(ret));
+        }
+    }
+
+    // Set the kernel command line arguments.
+    ret = fdt_set_chosen_string(dtb, "bootargs", p->cmdline);
+    if (ret < 0) {
+        panic(true, "linux: failed to set bootargs: '%s'", fdt_strerror(ret));
+    }
+
+    // Tell Linux about the UEFI memory map and system table.
+    ret = fdt_set_chosen_uint64(dtb, "linux,uefi-system-table", (uint64_t)gST);
+    if (ret < 0) {
+        panic(true, "linux: failed to set UEFI system table pointer: '%s'", fdt_strerror(ret));
+    }
+
+    // This property is not required by mainline Linux, but is required by
+    // Debian (and derivative) kernels, because Debian has a patch that adds
+    // this flag, and the existing logic that deals with it will just outright
+    // fail if any of the properties is missing.  We don't care about Debian's
+    // hardening or whatever, so just always report that secure boot is off.
+    ret = fdt_set_chosen_uint32(dtb, "linux,uefi-secure-boot", 0);
+    if (ret < 0) {
+        panic(true, "linux: failed to set UEFI secure boot state: '%s'", fdt_strerror(ret));
+    }
+}
 
 void add_framebuffer(struct fb_info *fb) {
     struct screen_info *screen_info = ext_mem_alloc(sizeof(struct screen_info));
@@ -81,96 +201,29 @@ void add_framebuffer(struct fb_info *fb) {
     }
 }
 
-void *prepare_device_tree_blob(char *config, char *cmdline) {
-    void *dtb = NULL;
-    char *dtb_path = config_get_value(config, 0, "DTB_PATH");
+void prepare_efi_tables(struct boot_param *p, char *config) {
+    (void)p;
+    int ret = 0;
 
-    if (dtb_path) {
-        struct file_handle *dtb_file;
-        if ((dtb_file = uri_open(dtb_path)) == NULL)
-            panic(true, "linux: Failed to open device tree blob with path `%#`. Is the path correct?", dtb_path);
+    {
+        size_t req_width = 0, req_height = 0, req_bpp = 0;
 
-        dtb = freadall(dtb_file, MEMMAP_BOOTLOADER_RECLAIMABLE);
-        fclose(dtb_file);
-    } else {
-    	// Hopefully 4K should be enough (mainly depends on the length of cmdline).
-    	dtb = get_device_tree_blob(0x1000);
-    }
-
-    int ret;
-
-    // Delete all /memory@... nodes. Linux will use the given UEFI memory map
-    // instead.
-    while (true) {
-        int offset = fdt_subnode_offset_namelen(dtb, 0, "memory@", 7);
-
-        if (offset == -FDT_ERR_NOTFOUND) {
-            break;
+        char *resolution = config_get_value(config, 0, "RESOLUTION");
+        if (resolution != NULL) {
+            parse_resolution(&req_width, &req_height, &req_bpp, resolution);
         }
 
-        if (offset < 0) {
-            panic(true, "linux: failed to find node: '%s'", fdt_strerror(offset));
+        struct fb_info *fbs;
+        size_t fbs_count;
+
+        term_notready();
+
+        fb_init(&fbs, &fbs_count, req_width, req_height, req_bpp);
+
+        // TODO(qookie): Let the user pick a framebuffer if there's > 1
+        if (fbs_count > 0) {
+            add_framebuffer(&fbs[0]);
         }
-
-        ret = fdt_del_node(dtb, offset);
-        if (ret < 0) {
-            panic(true, "linux: failed to delete memory node: '%s'", fdt_strerror(ret));
-        }
-    }
-
-    // Load an initrd if requested and add it to the device tree.
-    char *module_path = config_get_value(config, 0, "MODULE_PATH");
-    if (module_path) {
-        print("linux: Loading module `%#`...\n", module_path);
-
-        struct file_handle *module_file = uri_open(module_path);
-        if (!module_file) {
-            panic(true, "linux: failed to open module `%s`. Is the path correct?", module_path);
-        }
-
-        size_t module_size = module_file->size;
-        void *module_base = ext_mem_alloc_type_aligned(
-                        ALIGN_UP(module_size, 4096),
-                        MEMMAP_KERNEL_AND_MODULES, 4096);
-
-        fread(module_file, module_base, 0, module_size);
-        fclose(module_file);
-        printv("linux: loaded module `%s` at %x, size %u\n", module_path, module_base, module_size);
-
-        ret = fdt_set_chosen_uint64(dtb, "linux,initrd-start", (uint64_t)module_base);
-        if (ret < 0) {
-            panic(true, "linux: cannot set initrd parameter: '%s'", fdt_strerror(ret));
-        }
-
-        ret = fdt_set_chosen_uint64(dtb, "linux,initrd-end", (uint64_t)(module_base + module_size));
-        if (ret < 0) {
-            panic(true, "linux: cannot set initrd parameter: '%s'", fdt_strerror(ret));
-        }
-    }
-
-    size_t req_width = 0, req_height = 0, req_bpp = 0;
-
-    char *resolution = config_get_value(config, 0, "RESOLUTION");
-    if (resolution != NULL) {
-        parse_resolution(&req_width, &req_height, &req_bpp, resolution);
-    }
-
-    struct fb_info *fbs;
-    size_t fbs_count;
-
-    term_notready();
-
-    fb_init(&fbs, &fbs_count, req_width, req_height, req_bpp);
-
-    // TODO(qookie): Let the user pick a framebuffer if there's > 1
-    if (fbs_count > 0) {
-        add_framebuffer(&fbs[0]);
-    }
-
-    // Set the kernel command line arguments.
-    ret = fdt_set_chosen_string(dtb, "bootargs", cmdline);
-    if (ret < 0) {
-        panic(true, "linux: failed to set bootargs: '%s'", fdt_strerror(ret));
     }
 
     {
@@ -187,16 +240,12 @@ void *prepare_device_tree_blob(char *config, char *cmdline) {
             panic(true, "linux: failed to install memory reservation configuration table: '%x'", ret);
         }
     }
-
     efi_exit_boot_services();
+}
 
-    // Tell Linux about the UEFI memory map and system table.
-    ret = fdt_set_chosen_uint64(dtb, "linux,uefi-system-table", (uint64_t)gST);
-    if (ret < 0) {
-        panic(true, "linux: failed to set UEFI system table pointer: '%s'", fdt_strerror(ret));
-    }
-
-    ret = fdt_set_chosen_uint64(dtb, "linux,uefi-mmap-start", (uint64_t)efi_mmap);
+void prepare_mmap(struct boot_param *p) {
+    void *dtb = p->dtb;
+    int ret = fdt_set_chosen_uint64(dtb, "linux,uefi-mmap-start", (uint64_t)efi_mmap);
     if (ret < 0) {
         panic(true, "linux: failed to set UEFI memory map pointer: '%s'", fdt_strerror(ret));
     }
@@ -216,16 +265,6 @@ void *prepare_device_tree_blob(char *config, char *cmdline) {
         panic(true, "linux: failed to set UEFI memory map descriptor version: '%s'", fdt_strerror(ret));
     }
 
-    // This property is not required by mainline Linux, but is required by
-    // Debian (and derivative) kernels, because Debian has a patch that adds
-    // this flag, and the existing logic that deals with it will just outright
-    // fail if any of the properties is missing.  We don't care about Debian's
-    // hardening or whatever, so just always report that secure boot is off.
-    ret = fdt_set_chosen_uint32(dtb, "linux,uefi-secure-boot", 0);
-    if (ret < 0) {
-        panic(true, "linux: failed to set UEFI secure boot state: '%s'", fdt_strerror(ret));
-    }
-
     size_t efi_mmap_entry_count = efi_mmap_size / efi_desc_size;
     for (size_t i = 0; i < efi_mmap_entry_count; i++) {
         EFI_MEMORY_DESCRIPTOR *entry = (void *)efi_mmap + i * efi_desc_size;
@@ -238,11 +277,33 @@ void *prepare_device_tree_blob(char *config, char *cmdline) {
     if (status != EFI_SUCCESS) {
         panic(false, "linux: failed to set UEFI virtual address map: '%x'", status);
     }
+}
 
-    return dtb;
+noreturn void jump_to_kernel(struct boot_param *p) {
+#if defined(__riscv)
+    printv("linux: bsp hart %d, device tree blob at %x\n", bsp_hartid, p->dtb);
+
+    void (*kernel_entry)(uint64_t hartid, uint64_t dtb) = p->kernel_base;
+    asm ("csrci   sstatus, 0x2\n\t"
+         "csrw    sie, zero\n\t");
+    kernel_entry(bsp_hartid, (uint64_t)p->dtb);
+#elif defined(__aarch64__)
+    printv("linux: device tree blob at %x\n", p->dtb);
+
+    void (*kernel_entry)(uint64_t dtb, uint64_t res0, uint64_t res1, uint64_t res2) = p->kernel_base;
+    asm ("msr daifset, 0xF");
+    kernel_entry((uint64_t)p->dtb, 0, 0, 0);
+#endif
+    __builtin_unreachable();
 }
 
 noreturn void linux_load(char *config, char *cmdline) {
+    struct boot_param p;
+    memset(&p, 0, sizeof(p));
+    p.cmdline = cmdline;
+    // Hopefully 4K should be enough (mainly depends on the length of cmdline)
+    p.dtb = get_device_tree_blob(0x1000);
+
     struct file_handle *kernel_file;
 
     char *kernel_path = config_get_value(config, 0, "KERNEL_PATH");
@@ -256,52 +317,27 @@ noreturn void linux_load(char *config, char *cmdline) {
         panic(true, "linux: failed to open kernel `%s`. Is the path correct?", kernel_path);
     }
 
-    struct linux_header header;
-    fread(kernel_file, &header, 0, sizeof(header));
-
-    if (header.magic2 != LINUX_HEADER_MAGIC2) {
-        panic(true, "linux: kernel header magic does not match");
-    }
-
-    // Version fields are RV-specific
-#if defined(__riscv)
-    printv("linux: boot protocol version %d.%d\n",
-           LINUX_HEADER_MAJOR_VER(header.version),
-           LINUX_HEADER_MINOR_VER(header.version));
-    if (LINUX_HEADER_MAJOR_VER(header.version) == 0
-     && LINUX_HEADER_MINOR_VER(header.version) < 2) {
-        panic(true, "linux: protocols < 0.2 are not supported");
-    }
-#endif
-
-    size_t kernel_size = kernel_file->size;
-    void *kernel_base = ext_mem_alloc_type_aligned(
-                ALIGN_UP(kernel_size, 4096),
+    p.kernel_size = kernel_file->size;
+    p.kernel_base = ext_mem_alloc_type_aligned(
+                ALIGN_UP(p.kernel_size, 4096),
                 MEMMAP_KERNEL_AND_MODULES, 2 * 1024 * 1024);
-    fread(kernel_file, kernel_base, 0, kernel_size);
+    fread(kernel_file, p.kernel_base, 0, p.kernel_size);
     fclose(kernel_file);
-    printv("linux: loaded kernel `%s` at %x, size %u\n", kernel_path, kernel_base, kernel_size);
+    printv("linux: loaded kernel `%s` at %x, size %u\n", kernel_path, p.kernel_base, p.kernel_size);
 
-    void *dtb = prepare_device_tree_blob(config, cmdline);
-    if (!dtb) {
-        panic(true, "linux: failed to prepare the device tree blob");
-    }
+    const char *reason = verify_kernel(&p);
+    if (reason)
+        panic(true, "linux: invalid kernel image: %s", reason);
 
-#if defined(__riscv)
-    printv("linux: bsp hart %d, device tree blob at %x\n", bsp_hartid, dtb);
+    load_files(&p, config);
 
-    void (*kernel_entry)(uint64_t hartid, uint64_t dtb) = kernel_base;
-    asm ("csrci   sstatus, 0x2\n\t"
-         "csrw    sie, zero\n\t");
-    kernel_entry(bsp_hartid, (uint64_t)dtb);
-#elif defined(__aarch64__)
-    printv("linux: device tree blob at %x\n", dtb);
+    prepare_device_tree_blob(&p);
 
-    void (*kernel_entry)(uint64_t dtb, uint64_t res0, uint64_t res1, uint64_t res2) = kernel_base;
-    asm ("msr daifset, 0xF");
-    kernel_entry((uint64_t)dtb, 0, 0, 0);
-#endif
-    __builtin_unreachable();
+    prepare_efi_tables(&p, config);
+
+    prepare_mmap(&p);
+
+    jump_to_kernel(&p);
 }
 
 #endif
