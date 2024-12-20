@@ -42,6 +42,20 @@ struct linux_efi_memreserve {
     uint64_t next;
 };
 
+struct linux_efi_boot_memmap {
+    UINTN    map_size;
+    UINTN    desc_size;
+    uint32_t desc_ver;
+    UINTN    map_key;
+    UINTN    buff_size;
+    EFI_MEMORY_DESCRIPTOR descs[];
+};
+
+struct linux_efi_initrd {
+    UINTN base;
+    UINTN size;
+};
+
 // End of Linux code
 
 struct boot_param {
@@ -51,6 +65,7 @@ struct boot_param {
     size_t module_size;
     char *cmdline;
     void *dtb;
+    struct linux_efi_boot_memmap *memmap;
 };
 
 #if defined(__riscv)
@@ -203,7 +218,7 @@ void add_framebuffer(struct fb_info *fb) {
 
 void prepare_efi_tables(struct boot_param *p, char *config) {
     (void)p;
-    int ret = 0;
+    EFI_STATUS ret = 0;
 
     {
         size_t req_width = 0, req_height = 0, req_bpp = 0;
@@ -226,6 +241,7 @@ void prepare_efi_tables(struct boot_param *p, char *config) {
         }
     }
 
+
     {
         struct linux_efi_memreserve *rsv = ext_mem_alloc(sizeof(struct linux_efi_memreserve));
 
@@ -240,38 +256,89 @@ void prepare_efi_tables(struct boot_param *p, char *config) {
             panic(true, "linux: failed to install memory reservation configuration table: '%x'", ret);
         }
     }
+
+    if (p->module_base) {
+        struct linux_efi_initrd *initrd_table;
+
+        ret = gBS->AllocatePool(EfiLoaderData, sizeof(*initrd_table), (void **)&initrd_table);
+        if (ret != EFI_SUCCESS) {
+            panic(true, "linux: failed to allocate Linux initrd table");
+        }
+
+        initrd_table->base = (UINTN)p->module_base;
+        initrd_table->size = p->module_size;
+
+        EFI_GUID initrd_table_guid = { 0x5568e427, 0x68fc, 0x4f3d, { 0xac, 0x74, 0xca, 0x55, 0x52, 0x31, 0xcc, 0x68}};
+        ret = gBS->InstallConfigurationTable(&initrd_table_guid, initrd_table);
+        if (ret != EFI_SUCCESS) {
+            panic(true, "linux: failed to install initrd\n");
+        }
+    }
+
+    {
+        EFI_MEMORY_DESCRIPTOR tmp_mmap[1];
+        size_t mmap_size = sizeof(tmp_mmap);
+        UINTN mmap_key = 0;
+
+        gBS->GetMemoryMap(&efi_mmap_size, tmp_mmap, &mmap_key, &efi_desc_size, &efi_desc_ver);
+        mmap_size += 4096 + sizeof(struct linux_efi_boot_memmap);
+
+        ret = gBS->AllocatePool(EfiLoaderData, efi_mmap_size, (void **)&p->memmap);
+        if (ret != EFI_SUCCESS) {
+            panic(true, "linux: failed to allocate UEFI memory map");
+        }
+
+        p->memmap->buff_size = mmap_size;
+
+        EFI_GUID memmap_table_guid = { 0x800f683f, 0xd08b, 0x423a, { 0xa2, 0x93, 0x96, 0x5c, 0x3c, 0x6f, 0xe2, 0xb4}};
+        ret = gBS->InstallConfigurationTable(&memmap_table_guid, p->memmap);
+        if (ret != EFI_SUCCESS) {
+            panic(true, "linux: failed to install UEFI memory map");
+        }
+    }
+
     efi_exit_boot_services();
 }
 
 void prepare_mmap(struct boot_param *p) {
-    void *dtb = p->dtb;
-    int ret = fdt_set_chosen_uint64(dtb, "linux,uefi-mmap-start", (uint64_t)efi_mmap);
-    if (ret < 0) {
-        panic(true, "linux: failed to set UEFI memory map pointer: '%s'", fdt_strerror(ret));
+    {
+        void *dtb = p->dtb;
+        int ret = fdt_set_chosen_uint64(dtb, "linux,uefi-mmap-start", (uint64_t)efi_mmap);
+        if (ret < 0) {
+            panic(true, "linux: failed to set UEFI memory map pointer: '%s'", fdt_strerror(ret));
+        }
+
+        ret = fdt_set_chosen_uint32(dtb, "linux,uefi-mmap-size", efi_mmap_size);
+        if (ret < 0) {
+            panic(true, "linux: failed to set UEFI memory map size: '%s'", fdt_strerror(ret));
+        }
+
+        ret = fdt_set_chosen_uint32(dtb, "linux,uefi-mmap-desc-size", efi_desc_size);
+        if (ret < 0) {
+            panic(true, "linux: failed to set UEFI memory map descriptor size: '%s'", fdt_strerror(ret));
+        }
+
+        ret = fdt_set_chosen_uint32(dtb, "linux,uefi-mmap-desc-ver", efi_desc_ver);
+        if (ret < 0) {
+            panic(true, "linux: failed to set UEFI memory map descriptor version: '%s'", fdt_strerror(ret));
+        }
     }
 
-    ret = fdt_set_chosen_uint32(dtb, "linux,uefi-mmap-size", efi_mmap_size);
-    if (ret < 0) {
-        panic(true, "linux: failed to set UEFI memory map size: '%s'", fdt_strerror(ret));
-    }
-
-    ret = fdt_set_chosen_uint32(dtb, "linux,uefi-mmap-desc-size", efi_desc_size);
-    if (ret < 0) {
-        panic(true, "linux: failed to set UEFI memory map descriptor size: '%s'", fdt_strerror(ret));
-    }
-
-    ret = fdt_set_chosen_uint32(dtb, "linux,uefi-mmap-desc-ver", efi_desc_ver);
-    if (ret < 0) {
-        panic(true, "linux: failed to set UEFI memory map descriptor version: '%s'", fdt_strerror(ret));
-    }
+    p->memmap->map_size  = efi_mmap_size;
+    p->memmap->desc_size = efi_desc_size;
+    p->memmap->desc_ver  = efi_desc_ver;
+    p->memmap->map_key   = efi_mmap_key;
 
     size_t efi_mmap_entry_count = efi_mmap_size / efi_desc_size;
     for (size_t i = 0; i < efi_mmap_entry_count; i++) {
         EFI_MEMORY_DESCRIPTOR *entry = (void *)efi_mmap + i * efi_desc_size;
 
-        if (entry->Attribute & EFI_MEMORY_RUNTIME)
+        if (entry->Attribute & EFI_MEMORY_RUNTIME) {
             entry->VirtualStart = entry->PhysicalStart;
+        }
     }
+
+    memcpy(&p->memmap->descs, efi_mmap, efi_mmap_size);
 
     EFI_STATUS status = gRT->SetVirtualAddressMap(efi_mmap_size, efi_desc_size, efi_desc_ver, efi_mmap);
     if (status != EFI_SUCCESS) {

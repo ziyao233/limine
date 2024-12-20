@@ -16,7 +16,7 @@ EFI_BOOT_SERVICES *gBS;
 EFI_RUNTIME_SERVICES *gRT;
 EFI_HANDLE efi_image_handle;
 EFI_MEMORY_DESCRIPTOR *efi_mmap = NULL;
-UINTN efi_mmap_size = 0, efi_desc_size = 0;
+UINTN efi_mmap_size = 0, efi_desc_size = 0, efi_mmap_key = 0;
 UINT32 efi_desc_ver = 0;
 #endif
 
@@ -205,9 +205,8 @@ bool efi_exit_boot_services(void) {
 
     EFI_MEMORY_DESCRIPTOR tmp_mmap[1];
     efi_mmap_size = sizeof(tmp_mmap);
-    UINTN mmap_key = 0;
 
-    gBS->GetMemoryMap(&efi_mmap_size, tmp_mmap, &mmap_key, &efi_desc_size, &efi_desc_ver);
+    gBS->GetMemoryMap(&efi_mmap_size, tmp_mmap, &efi_mmap_key, &efi_desc_size, &efi_desc_ver);
 
     efi_mmap_size += 4096;
 
@@ -232,13 +231,13 @@ bool efi_exit_boot_services(void) {
     size_t retries = 0;
 
 retry:
-    status = gBS->GetMemoryMap(&efi_mmap_size, efi_mmap, &mmap_key, &efi_desc_size, &efi_desc_ver);
+    status = gBS->GetMemoryMap(&efi_mmap_size, efi_mmap, &efi_mmap_key, &efi_desc_size, &efi_desc_ver);
     if (retries == 0 && status) {
         goto fail;
     }
 
     // Be gone, UEFI!
-    status = gBS->ExitBootServices(efi_image_handle, mmap_key);
+    status = gBS->ExitBootServices(efi_image_handle, efi_mmap_key);
     if (status) {
         if (retries == 128) {
             goto fail;
