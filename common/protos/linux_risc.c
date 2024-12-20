@@ -1,4 +1,4 @@
-#if defined(__riscv) || defined(__aarch64__)
+#if defined(__riscv) || defined(__aarch64__) || defined(__loongarch__)
 
 #include <stdint.h>
 #include <stddef.h>
@@ -22,6 +22,7 @@
 // kernel headers released under GPL-2.0 WITH Linux-syscall-note
 // allowing their inclusion in non GPL compliant code.
 
+#if defined(__riscv) || defined(__aarch64__)
 struct linux_header {
     uint32_t code0;
     uint32_t code1;
@@ -35,6 +36,22 @@ struct linux_header {
     uint32_t magic2;
     uint32_t res4;
 } __attribute__((packed));
+#elif defined(__loongarch__)
+struct linux_header {
+    uint32_t mz;
+    uint32_t res0;
+    uint64_t kernel_entry;
+    uint64_t image_size;
+    uint64_t load_offset;
+    uint64_t res1;
+    uint64_t res2;
+    uint64_t res3;
+    uint32_t magic2;       // LINUX_PE_MAGIC
+    uint32_t pe_offset;
+} __attribute__((packed));
+#else
+#error "Unknown architecture"
+#endif
 
 struct linux_efi_memreserve {
     int size;
@@ -74,6 +91,8 @@ struct boot_param {
 #define LINUX_HEADER_MINOR_VER(ver)     (((ver) >> 0)  & 0xffff)
 #elif defined(__aarch64__)
 #define LINUX_HEADER_MAGIC2             0x644d5241
+#elif defined(__loongarch__)
+#define LINUX_HEADER_MAGIC2             0x818223cd
 #endif
 
 const char *verify_kernel(struct boot_param *p) {
@@ -334,7 +353,13 @@ void prepare_mmap(struct boot_param *p) {
         EFI_MEMORY_DESCRIPTOR *entry = (void *)efi_mmap + i * efi_desc_size;
 
         if (entry->Attribute & EFI_MEMORY_RUNTIME) {
-            entry->VirtualStart = entry->PhysicalStart;
+	    // LoongArch kernel requires the virtual address stays in the
+	    // privileged, direct-mapped window
+	    #if defined(__loongarch__)
+       	        entry->VirtualStart = entry->PhysicalStart | (0x8ULL << 60);
+            #else
+	        entry->VirtualStart = entry->PhysicalStart;
+	    #endif
         }
     }
 
@@ -360,6 +385,34 @@ noreturn void jump_to_kernel(struct boot_param *p) {
     void (*kernel_entry)(uint64_t dtb, uint64_t res0, uint64_t res1, uint64_t res2) = p->kernel_base;
     asm ("msr daifset, 0xF");
     kernel_entry((uint64_t)p->dtb, 0, 0, 0);
+#elif defined(__loongarch__)
+// LoongArch kernel used to store virtual address in header.kernel_entry
+// clearing the high 16bits ensures compatibility
+#define TO_PHYS(addr) ((addr) & ((1ULL << 48) - 1))
+#define CSR_DMW_PLV0  1ULL
+#define CSR_DMW0_VSEG 0x8000ULL
+#define CSR_DMW0_BASE (CSR_DMW0_VSEG << 48)
+#define CSR_DMW0_INIT (CSR_DMW0_BASE | CSR_DMW_PLV0)
+#define CSR_DMW1_MAT  (1 << 4)
+#define CSR_DMW1_VSEG 0x9000ULL
+#define CSR_DMW1_BASE (CSR_DMW1_VSEG << 48)
+#define CSR_DMW1_INIT (CSR_DMW1_BASE | CSR_DMW1_MAT | CSR_DMW_PLV0)
+#define CSR_DMW2_VSEG 0xa000ULL
+#define CSR_DMW2_MAT  (2 << 4)
+#define CSR_DMW2_BASE (CSR_DMW2_VSEG << 48)
+#define CSR_DMW2_INIT (CSR_DMW2_BASE | CSR_DMW2_MAT | CSR_DMW_PLV0)
+#define CSR_DMW3_INIT 0
+
+    struct linux_header *header = p->kernel_base;
+    void (*kernel_entry)(uint64_t efi_boot, uint64_t cmdline, uint64_t st);
+    kernel_entry = p->kernel_base + (TO_PHYS(header->kernel_entry) - header->load_offset);
+
+    asm volatile ("csrxchg $r0, %0, 0x0" :: "r" (0x4) : "memory");
+    asm volatile ("csrwr   %0,  0x180"   :: "r" (CSR_DMW0_INIT) : "memory");
+    asm volatile ("csrwr   %0,  0x181"   :: "r" (CSR_DMW1_INIT) : "memory");
+    asm volatile ("csrwr   %0,  0x182"   :: "r" (CSR_DMW2_INIT) : "memory");
+    asm volatile ("csrwr   %0,  0x183"   :: "r" (CSR_DMW3_INIT) : "memory");
+    kernel_entry(1, (uint64_t)p->cmdline, (uint64_t)gST);
 #endif
     __builtin_unreachable();
 }
